@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:eucalysp_insight_app/features/business/bloc/business_cubit.dart';
 import 'package:eucalysp_insight_app/features/business/bloc/business_state.dart';
-import 'package:eucalysp_insight_app/features/business/domain/entities/business.dart';
 import 'package:eucalysp_insight_app/features/auth/bloc/auth_cubit.dart'; // To get userId from AuthCubit
 import 'package:eucalysp_insight_app/features/auth/bloc/auth_state.dart';
 

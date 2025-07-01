@@ -14,7 +14,7 @@ class DashboardInitial extends DashboardState {}
 class DashboardLoading extends DashboardState {}
 
 class DashboardLoaded extends DashboardState {
-  final DashboardData dashboardData; // Now holds the full DashboardData object
+  final DashboardData dashboardData;
 
   const DashboardLoaded({required this.dashboardData});
 

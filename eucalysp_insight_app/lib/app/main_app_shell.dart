@@ -1,7 +1,6 @@
 // lib/app/main_app_shell.dart
 import 'package:eucalysp_insight_app/app/core/bloc/navigation_cubit/navigation_cubit.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // For kIsWeb and TargetPlatform
 import 'package:go_router/go_router.dart';
 import 'package:eucalysp_insight_app/app/core/services/layout_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart'; // Import flutter_bloc

@@ -1,78 +1,109 @@
 // lib/features/sales/bloc/sales_cubit.dart
 import 'package:eucalysp_insight_app/features/sales/domain/entities/sale.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:eucalysp_insight_app/features/sales/bloc/sales_state.dart';
+import 'package:eucalysp_insight_app/app/core/bloc/business_data_bloc.dart';
+import 'package:eucalysp_insight_app/app/core/utils/business_data_loader.dart';
 import 'package:eucalysp_insight_app/features/sales/data/repositories/sales_repository.dart';
-import 'package:eucalysp_insight_app/features/business/bloc/business_cubit.dart'; // Import BusinessCubit
-import 'package:eucalysp_insight_app/features/business/bloc/business_state.dart'; // Import BusinessState
-import 'dart:async'; // Required for StreamSubscription
+import 'package:eucalysp_insight_app/features/business/bloc/business_cubit.dart';
+import 'package:eucalysp_insight_app/features/business/bloc/business_state.dart';
+import 'package:eucalysp_insight_app/features/sales/domain/entities/sale_item.dart';
 
-class SalesCubit extends Cubit<SalesState> {
+// REMOVE THESE OLD SALES STATE DEFINITIONS ENTIRELY (if still present)
+/*
+abstract class SalesState {}
+class SalesInitial extends SalesState {}
+class SalesLoading extends SalesState {}
+class SalesLoaded extends SalesState {
+  final List<Sale> sales;
+  SalesLoaded({required this.sales});
+}
+class SalesError extends SalesState {
+  final String message;
+  SalesError({required this.message});
+}
+*/
+
+class SalesCubit extends BusinessDataBloc<List<Sale>> {
   final SalesRepository _salesRepository;
+  // CHANGE 1: Add 'late' keyword here
+  late final BusinessDataLoader<List<Sale>, SalesCubit> _loader;
   final BusinessCubit _businessCubit;
-  late StreamSubscription _businessSubscription;
-  String? _currentBusinessId; // To keep track of the last fetched businessId
 
   SalesCubit({
     required SalesRepository salesRepository,
     required BusinessCubit businessCubit,
   }) : _salesRepository = salesRepository,
        _businessCubit = businessCubit,
-       super(SalesInitial()) {
-    // Listen to BusinessCubit's state changes
-    _businessSubscription = _businessCubit.stream.listen((businessState) {
-      if (businessState is BusinessLoaded &&
-          businessState.selectedBusiness != null) {
-        final newBusinessId = businessState.selectedBusiness!.id;
-        // Only fetch if the business ID has actually changed, or if it's the first fetch
-        if (newBusinessId != _currentBusinessId) {
-          _currentBusinessId = newBusinessId;
-          fetchSales(newBusinessId);
-        }
-      } else if (businessState is BusinessLoaded &&
-          businessState.selectedBusiness == null) {
-        // If no business is selected (e.g., after logout), go back to initial state
-        _currentBusinessId = null;
-        emit(SalesInitial());
-      }
-    });
-
-    // Also trigger initial fetch if a business is already selected on cubit creation
-    if (_businessCubit.state is BusinessLoaded &&
-        (_businessCubit.state as BusinessLoaded).selectedBusiness != null) {
-      _currentBusinessId =
-          (_businessCubit.state as BusinessLoaded).selectedBusiness!.id;
-      fetchSales(_currentBusinessId!);
-    }
+       super() {
+    // Call the super constructor first
+    // CHANGE 2: Move the initialization of _loader into the constructor body
+    _loader = BusinessDataLoader<List<Sale>, SalesCubit>(
+      businessCubit: businessCubit, // Use the parameter directly
+      dataCubit: this, // 'this' is now valid here
+    );
   }
 
-  Future<void> fetchSales(String businessId) async {
+  @override
+  Future<void> loadData(String businessId) async {
     try {
-      emit(SalesLoading());
+      emit(BusinessDataLoading());
       final sales = await _salesRepository.fetchSales(businessId);
-      emit(SalesLoaded(sales: sales));
+      emit(BusinessDataLoaded(sales));
     } catch (e) {
-      emit(SalesError(message: 'Failed to load sales: ${e.toString()}'));
+      emit(BusinessDataError('Failed to load sales: ${e.toString()}'));
     }
   }
 
-  // Example for future: add a sale (will trigger a refresh)
   Future<void> addSale(Sale sale) async {
     try {
-      emit(SalesLoading()); // Or a more specific state like SalesAdding
       await _salesRepository.addSale(sale);
-      // After adding, refetch the list to update the UI
-      if (_currentBusinessId != null) {
-        await fetchSales(_currentBusinessId!);
+
+      final currentBusinessState = _businessCubit.state;
+      if (currentBusinessState is BusinessLoaded &&
+          currentBusinessState.selectedBusiness != null) {
+        await loadData(currentBusinessState.selectedBusiness!.id);
+      } else {
+        emit(
+          BusinessDataError(
+            'Sale added, but no business selected to refresh list.',
+          ),
+        );
       }
     } catch (e) {
-      emit(SalesError(message: 'Failed to add sale: ${e.toString()}'));
+      emit(BusinessDataError('Failed to add sale: ${e.toString()}'));
+    }
+  }
+
+  Future<void> updateSale(Sale sale) async {
+    try {
+      emit(BusinessDataLoading());
+      await _salesRepository.updateSale(sale);
+      final currentBusinessState = _businessCubit.state;
+      if (currentBusinessState is BusinessLoaded &&
+          currentBusinessState.selectedBusiness != null) {
+        await loadData(currentBusinessState.selectedBusiness!.id);
+      }
+    } catch (e) {
+      emit(BusinessDataError('Failed to update sale: ${e.toString()}'));
+    }
+  }
+
+  Future<void> deleteSale(String saleId) async {
+    try {
+      emit(BusinessDataLoading());
+      await _salesRepository.deleteSale(saleId);
+      final currentBusinessState = _businessCubit.state;
+      if (currentBusinessState is BusinessLoaded &&
+          currentBusinessState.selectedBusiness != null) {
+        await loadData(currentBusinessState.selectedBusiness!.id);
+      }
+    } catch (e) {
+      emit(BusinessDataError('Failed to delete sale: ${e.toString()}'));
     }
   }
 
   @override
   Future<void> close() {
-    _businessSubscription.cancel();
+    _loader.dispose();
     return super.close();
   }
 }

@@ -4,7 +4,9 @@ import 'package:eucalysp_insight_app/features/sales/domain/entities/sale_item.da
 
 abstract class SalesRepository {
   Future<List<Sale>> fetchSales(String businessId);
-  Future<void> addSale(Sale sale); // For future "add sale" feature
+  Future<void> addSale(Sale sale);
+  Future<void> updateSale(Sale sale);
+  Future<void> deleteSale(String saleId);
 }
 
 class MockSalesRepository implements SalesRepository {
@@ -91,9 +93,15 @@ class MockSalesRepository implements SalesRepository {
 
   @override
   Future<List<Sale>> fetchSales(String businessId) async {
+    print('[SalesRepository] Fetching sales for business: $businessId');
     await Future.delayed(const Duration(seconds: 1)); // Simulate network delay
+    if (DateTime.now().second % 5 == 0) {
+      // 20% chance of error
+      throw Exception('Failed to fetch sales: Network error');
+    }
     // Return a deep copy to prevent external modifications to the mock data
-    return _salesByBusiness[businessId]
+    final sales =
+        _salesByBusiness[businessId]
             ?.map(
               (sale) => Sale(
                 id: sale.id,
@@ -101,18 +109,50 @@ class MockSalesRepository implements SalesRepository {
                 saleDate: sale.saleDate,
                 customerName: sale.customerName,
                 totalAmount: sale.totalAmount,
-                items: List<SaleItem>.from(
-                  sale.items,
-                ), // Deep copy items if they were mutable
+                items: List<SaleItem>.from(sale.items),
               ),
             )
             .toList() ??
         [];
+    print(
+      '[SalesRepository] Found ${sales.length} sales for business: $businessId',
+    );
+    return sales;
   }
 
   @override
   Future<void> addSale(Sale sale) async {
     await Future.delayed(const Duration(seconds: 1));
+    if (DateTime.now().second % 5 == 0) {
+      // 20% chance of error
+      throw Exception('Failed to add sale: Server unavailable');
+    }
     _salesByBusiness.putIfAbsent(sale.businessId, () => []).add(sale);
+  }
+
+  @override
+  Future<void> updateSale(Sale sale) async {
+    await Future.delayed(const Duration(seconds: 1));
+    if (DateTime.now().second % 5 == 0) {
+      // 20% chance of error
+      throw Exception('Failed to update sale: Version conflict');
+    }
+    final sales = _salesByBusiness[sale.businessId];
+    if (sales != null) {
+      final index = sales.indexWhere((s) => s.id == sale.id);
+      if (index != -1) sales[index] = sale;
+    }
+  }
+
+  @override
+  Future<void> deleteSale(String saleId) async {
+    await Future.delayed(const Duration(seconds: 1));
+    if (DateTime.now().second % 5 == 0) {
+      // 20% chance of error
+      throw Exception('Failed to delete sale: Permission denied');
+    }
+    _salesByBusiness.forEach(
+      (_, sales) => sales.removeWhere((s) => s.id == saleId),
+    );
   }
 }

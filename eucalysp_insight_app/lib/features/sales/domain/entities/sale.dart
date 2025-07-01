@@ -54,4 +54,22 @@ class Sale extends Equatable {
     totalAmount,
     items,
   ];
+
+  Sale copyWith({
+    String? id,
+    String? businessId,
+    DateTime? saleDate,
+    String? customerName,
+    double? totalAmount,
+    List<SaleItem>? items,
+  }) {
+    return Sale(
+      id: id ?? this.id,
+      businessId: businessId ?? this.businessId,
+      saleDate: saleDate ?? this.saleDate,
+      customerName: customerName ?? this.customerName,
+      totalAmount: totalAmount ?? this.totalAmount,
+      items: items ?? List.from(this.items),
+    );
+  }
 }

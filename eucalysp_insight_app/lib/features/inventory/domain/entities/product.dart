@@ -1,14 +1,26 @@
 // lib/features/inventory/domain/entities/product.dart
-import 'package:equatable/equatable.dart';
+import 'package:hive/hive.dart';
 
-class Product extends Equatable {
+part 'product.g.dart'; // This file will be generated
+
+@HiveType(typeId: 0) // Unique type ID for Product
+class Product {
+  @HiveField(0)
   final String id;
-  final String businessId; // To link product to a specific business
+  @HiveField(1)
+  final String businessId;
+  @HiveField(2)
   final String name;
-  final String sku; // Stock Keeping Unit
+  @HiveField(3)
+  final String sku;
+  @HiveField(4)
   final String description;
-  final int quantity; // Current stock quantity
+  @HiveField(5)
+  final int quantity;
+  @HiveField(6)
   final double price;
+  @HiveField(7)
+  final String? category; // Ensure this also has a field ID
 
   const Product({
     required this.id,
@@ -18,35 +30,10 @@ class Product extends Equatable {
     required this.description,
     required this.quantity,
     required this.price,
+    this.category,
   });
 
-  // Factory constructor for creating a Product from a map (e.g., from JSON)
-  factory Product.fromJson(Map<String, dynamic> json) {
-    return Product(
-      id: json['id'] as String,
-      businessId: json['businessId'] as String,
-      name: json['name'] as String,
-      sku: json['sku'] as String,
-      description: json['description'] as String,
-      quantity: json['quantity'] as int,
-      price: (json['price'] as num).toDouble(),
-    );
-  }
-
-  // Method for converting a Product to a map (e.g., for JSON serialization)
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'businessId': businessId,
-      'name': name,
-      'sku': sku,
-      'description': description,
-      'quantity': quantity,
-      'price': price,
-    };
-  }
-
-  // Method to create a copy with updated fields
+  // Add copyWith method if you don't have it already
   Product copyWith({
     String? id,
     String? businessId,
@@ -55,6 +42,7 @@ class Product extends Equatable {
     String? description,
     int? quantity,
     double? price,
+    String? category,
   }) {
     return Product(
       id: id ?? this.id,
@@ -64,17 +52,7 @@ class Product extends Equatable {
       description: description ?? this.description,
       quantity: quantity ?? this.quantity,
       price: price ?? this.price,
+      category: category ?? this.category,
     );
   }
-
-  @override
-  List<Object?> get props => [
-    id,
-    businessId,
-    name,
-    sku,
-    description,
-    quantity,
-    price,
-  ];
 }

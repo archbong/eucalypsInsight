@@ -5,7 +5,6 @@ import 'package:eucalysp_insight_app/features/dashboard/bloc/dashboard_cubit.dar
 import 'package:eucalysp_insight_app/features/dashboard/bloc/dashboard_state.dart';
 import 'package:eucalysp_insight_app/features/business/bloc/business_cubit.dart';
 import 'package:eucalysp_insight_app/features/business/bloc/business_state.dart';
-import 'package:eucalysp_insight_app/features/dashboard/domain/entities/transaction.dart'; // NEW import for Transaction
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
