@@ -602,8 +602,9 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                             side: BorderSide(
                               color: _selectedItems.contains(product.id)
                                   ? AppColors
-                                        .primary // Highlight border when selected
-                                  : AppColors.cardBorder,
+                                        .primary // Highlight border when selected (from theme extension)
+                                  : AppColors
+                                        .backgroundMuted, // <-- USE YOUR THEME EXTENSION HERE
                               width: _selectedItems.contains(product.id)
                                   ? 1.5
                                   : 1.0,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:eucalysp_insight_app/app/app_theme.dart'; // Import your AppThemeColors and AppRadius
 import 'package:eucalysp_insight_app/features/inventory/bloc/inventory_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:eucalysp_insight_app/features/business/bloc/business_cubit.dart';
@@ -9,7 +10,7 @@ import 'package:eucalysp_insight_app/features/inventory/presentation/widgets/sto
 import 'package:eucalysp_insight_app/features/inventory/presentation/widgets/categories.dart';
 import 'package:eucalysp_insight_app/features/inventory/presentation/widgets/variants.dart';
 import 'package:eucalysp_insight_app/features/inventory/presentation/screens/add_inventory_screen.dart';
-import 'package:eucalysp_insight_app/app/app_theme.dart'; // Import your AppColors and AppRadius
+// import 'package:eucalysp_insight_app/app/app_theme.dart'; // This import is duplicated and not needed if the first one is sufficient
 
 class InventoryManagementScreen extends StatelessWidget {
   const InventoryManagementScreen({super.key});
@@ -29,6 +30,14 @@ class InventoryManagementScreen extends StatelessWidget {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isLargeScreen = screenWidth > 600;
 
+    // Access the custom theme colors once at the top of the build method
+    // This is the CORRECT way to get your custom AppThemeColors
+    final AppThemeColors appColors = Theme.of(
+      context,
+    ).extension<AppThemeColors>()!;
+    // Also get the standard ColorScheme for general Material 3 colors
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     return BlocListener<InventoryCubit, InventoryState>(
       listener: (context, state) {
         if (state is InventoryLoaded) {
@@ -40,37 +49,49 @@ class InventoryManagementScreen extends StatelessWidget {
           );
         }
       },
-      child: _buildScreenContent(context, isLargeScreen),
+      child: _buildScreenContent(
+        context,
+        isLargeScreen,
+        appColors,
+        colorScheme,
+      ),
     );
   }
 
-  Widget _buildScreenContent(BuildContext context, bool isLargeScreen) {
+  Widget _buildScreenContent(
+    BuildContext context,
+    bool isLargeScreen,
+    AppThemeColors appColors,
+    ColorScheme colorScheme,
+  ) {
     return DefaultTabController(
       length: 4,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
+          title: Text(
             'Inventory Management',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary, // Using your defined text color
+              // Use appColors.textPrimary from your custom extension
+              color: appColors.textPrimary,
             ),
           ),
-          backgroundColor:
-              AppColors.backgroundLight, // Using your defined background color
+          // Use appColors.background from your custom extension
+          backgroundColor: appColors.background,
           elevation: 4.0,
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(kToolbarHeight),
             child: Container(
-              color: AppColors.backgroundLight, // Match app bar background
+              // Use appColors.background from your custom extension
+              color: appColors.background,
               child: TabBar(
                 isScrollable: true,
-                labelColor:
-                    AppColors.primary, // Using your defined primary color
-                unselectedLabelColor:
-                    AppColors.textMuted, // Using your defined muted text color
-                indicatorColor:
-                    AppColors.primaryLight, // Using primaryLight for indicator
+                // Use appColors.primary from your custom extension
+                labelColor: appColors.primary,
+                // Use appColors.textSecondary from your custom extension
+                unselectedLabelColor: appColors.textSecondary,
+                // Using colorScheme.primaryContainer as it was already in your ColorScheme definition
+                indicatorColor: colorScheme.primaryContainer,
                 indicatorWeight: 4.0,
                 indicatorSize: TabBarIndicatorSize.label,
                 labelStyle: const TextStyle(fontWeight: FontWeight.bold),
@@ -88,8 +109,9 @@ class InventoryManagementScreen extends StatelessWidget {
           ),
         ),
         body: Container(
-          color: AppColors
-              .backgroundMuted, // Using your defined muted background color
+          // Use appColors.surface from your custom extension, or colorScheme.surface
+          color: appColors
+              .background, // It's better to use appColors.background or colorScheme.background for the body directly to ensure consistency with the scaffold
           child: TabBarView(
             children: [
               Padding(
@@ -130,11 +152,12 @@ class InventoryManagementScreen extends StatelessWidget {
                   content: Text(
                     'Please select a business first',
                     style: TextStyle(
-                      color: AppColors.textInverse,
-                    ), // Using your defined inverse text color
+                      // Use appColors.textInverse from your custom extension
+                      color: appColors.textInverse,
+                    ),
                   ),
-                  backgroundColor:
-                      AppColors.error, // Using your defined error color
+                  // Use appColors.error from your custom extension
+                  backgroundColor: appColors.error,
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -145,10 +168,10 @@ class InventoryManagementScreen extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           icon: const Icon(Icons.add_circle_outline),
-          backgroundColor:
-              AppColors.primary, // Using your defined primary color
-          foregroundColor:
-              AppColors.textInverse, // Using your defined inverse text color
+          // Use appColors.primary from your custom extension
+          backgroundColor: appColors.primary,
+          // Use appColors.textInverse from your custom extension
+          foregroundColor: appColors.textInverse,
           elevation: 6.0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(
