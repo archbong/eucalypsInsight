@@ -31,3 +31,20 @@ class AuthError extends AuthState {
   @override
   List<Object?> get props => [message];
 }
+
+// --- NEW STATES FOR SIGNUP ---
+class SignupSuccess extends AuthState {
+  final String message;
+  const SignupSuccess({this.message = 'Account created successfully!'});
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class SignupFailed extends AuthState {
+  final String message;
+  const SignupFailed({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}

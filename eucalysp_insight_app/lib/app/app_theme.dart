@@ -13,6 +13,7 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
   final Color textMuted;
   final Color textInverse;
   final Color error;
+  final Color success;
 
   const AppThemeColors({
     required this.primary,
@@ -25,6 +26,7 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
     required this.textMuted,
     required this.textInverse,
     required this.error,
+    required this.success,
   });
 
   // Light Theme Colors
@@ -38,7 +40,8 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
     textSecondary: Color(0xFF444444),
     textMuted: Color(0xFF666666),
     textInverse: Color(0xFFFFFFFF),
-    error: Color(0xFFB00020), // Material Design Red
+    error: Color(0xFFB00020),
+    success: Color(0xFF4CAF50), // Material Design Red
   );
 
   // Dark Theme Colors
@@ -52,7 +55,8 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
     textSecondary: Color(0xFFE0E0E0),
     textMuted: Color(0xFFB3B3B3),
     textInverse: Color(0xFF000000), // Black text on light primary accent
-    error: Color(0xFFCF6679), // Material Design Red for Dark Mode
+    error: Color(0xFFCF6679),
+    success: Color(0xFFA5D6A7), // Material Design Red for Dark Mode
   );
 
   @override
@@ -67,6 +71,7 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
     Color? textMuted,
     Color? textInverse,
     Color? error,
+    Color? success,
   }) {
     return AppThemeColors(
       primary: primary ?? this.primary,
@@ -79,6 +84,7 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
       textMuted: textMuted ?? this.textMuted,
       textInverse: textInverse ?? this.textInverse,
       error: error ?? this.error,
+      success: success ?? this.success,
     );
   }
 
@@ -101,6 +107,7 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
       textMuted: Color.lerp(textMuted, other.textMuted, t)!,
       textInverse: Color.lerp(textInverse, other.textInverse, t)!,
       error: Color.lerp(error, other.error, t)!,
+      success: Color.lerp(success, other.success, t)!,
     );
   }
 }

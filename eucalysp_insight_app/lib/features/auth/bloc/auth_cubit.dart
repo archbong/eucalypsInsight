@@ -3,7 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:eucalysp_insight_app/features/auth/bloc/auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
-  AuthCubit() : super(Unauthenticated()); // Start in an unauthenticated state
+  AuthCubit() : super(Unauthenticated());
+
+  final List<Map<String, String>> _registeredUsers = [
+    {'username': 'user', 'password': 'password'}, // Your existing test user
+  ];
+  // Start in an unauthenticated state
 
   Future<void> login(String username, String password) async {
     emit(AuthLoading()); // Indicate that login is in progress
@@ -23,6 +28,36 @@ class AuthCubit extends Cubit<AuthState> {
       emit(
         AuthError(message: 'Login failed: ${e.toString()}'),
       ); // Handle any unexpected errors
+    }
+  }
+
+  Future<void> signup(String username, String password) async {
+    emit(AuthLoading()); // Indicate that signup is in progress
+
+    try {
+      // Simulate an API call for signup
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Simulate checking if username already exists
+      if (_registeredUsers.any((user) => user['username'] == username)) {
+        emit(
+          const SignupFailed(
+            message: 'Username already exists. Please choose another.',
+          ),
+        );
+      } else {
+        // Simulate successful registration
+        _registeredUsers.add({'username': username, 'password': password});
+        emit(
+          const SignupSuccess(
+            message: 'Account created successfully! You can now log in.',
+          ),
+        );
+      }
+    } catch (e) {
+      emit(
+        SignupFailed(message: 'Signup failed: ${e.toString()}'),
+      ); // Handle any unexpected errors during signup
     }
   }
 

@@ -118,12 +118,12 @@ class _MainAppShellState extends State<MainAppShell> {
                 activeIcon: Icon(Icons.shopping_cart),
                 label: 'Sales',
               ),
-              // You can add a fourth item here if desired, e.g., 'Reports'
-              // BottomNavigationBarItem(
-              //   icon: Icon(Icons.bar_chart_outlined),
-              //   activeIcon: Icon(Icons.bar_chart),
-              //   label: 'Reports',
-              // ),
+
+              BottomNavigationBarItem(
+                icon: Icon(Icons.menu),
+                activeIcon: Icon(Icons.menu),
+                //  label: '',
+              ),
             ];
 
             return Scaffold(

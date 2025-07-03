@@ -19,6 +19,7 @@ import 'package:eucalysp_insight_app/app/core/service_locator.dart';
 import 'package:eucalysp_insight_app/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:eucalysp_insight_app/features/dashboard/bloc/dashboard_cubit.dart';
 import 'package:eucalysp_insight_app/features/auth/presentation/screens/login_screen.dart';
+import 'package:eucalysp_insight_app/features/auth/presentation/screens/signup_screen.dart';
 import 'package:eucalysp_insight_app/features/auth/bloc/auth_cubit.dart';
 import 'package:eucalysp_insight_app/features/auth/bloc/auth_state.dart';
 import 'dart:async';
@@ -44,6 +45,10 @@ GoRouter buildAppRouter({
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/signup',
+        builder: (context, state) => const SignupScreen(),
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
