@@ -5,26 +5,11 @@ import 'package:eucalysp_insight_app/app/core/utils/business_data_loader.dart';
 import 'package:eucalysp_insight_app/features/sales/data/repositories/sales_repository.dart';
 import 'package:eucalysp_insight_app/features/business/bloc/business_cubit.dart';
 import 'package:eucalysp_insight_app/features/business/bloc/business_state.dart';
-import 'package:eucalysp_insight_app/features/sales/domain/entities/sale_item.dart';
 
-// REMOVE THESE OLD SALES STATE DEFINITIONS ENTIRELY (if still present)
-/*
-abstract class SalesState {}
-class SalesInitial extends SalesState {}
-class SalesLoading extends SalesState {}
-class SalesLoaded extends SalesState {
-  final List<Sale> sales;
-  SalesLoaded({required this.sales});
-}
-class SalesError extends SalesState {
-  final String message;
-  SalesError({required this.message});
-}
-*/
-
-class SalesCubit extends BusinessDataBloc<List<Sale>> {
+// SalesCubit must use the BusinessDataLoaderMixin as it's designed to provide executeLoad
+class SalesCubit extends BusinessDataBloc<List<Sale>>
+    with BusinessDataLoaderMixin<List<Sale>> {
   final SalesRepository _salesRepository;
-  // CHANGE 1: Add 'late' keyword here
   late final BusinessDataLoader<List<Sale>, SalesCubit> _loader;
   final BusinessCubit _businessCubit;
 
@@ -34,54 +19,51 @@ class SalesCubit extends BusinessDataBloc<List<Sale>> {
   }) : _salesRepository = salesRepository,
        _businessCubit = businessCubit,
        super() {
-    // Call the super constructor first
-    // CHANGE 2: Move the initialization of _loader into the constructor body
     _loader = BusinessDataLoader<List<Sale>, SalesCubit>(
-      businessCubit: businessCubit, // Use the parameter directly
-      dataCubit: this, // 'this' is now valid here
+      businessCubit: _businessCubit,
+      dataCubit: this, // 'this' refers to SalesCubit instance
     );
   }
 
+  // loadData is an abstract method in BusinessDataBloc, so it must be implemented.
+  // It will be called by BusinessDataLoader.
   @override
   Future<void> loadData(String businessId) async {
-    try {
-      emit(BusinessDataLoading());
-      final sales = await _salesRepository.fetchSales(businessId);
-      emit(BusinessDataLoaded(sales));
-    } catch (e) {
-      emit(BusinessDataError('Failed to load sales: ${e.toString()}'));
-    }
+    // Use the executeLoad helper from BusinessDataLoaderMixin
+    // This handles emit(BusinessDataLoading()) and emit(BusinessDataLoaded(data))
+    // or emit(BusinessDataError(...)) internally based on the loader function's outcome.
+    await executeLoad(
+      loader: () => _salesRepository.fetchSales(businessId),
+      errorMessage: 'Failed to load sales',
+    );
+  }
+
+  // refreshData is an abstract method in BusinessDataBloc, must be implemented.
+  // It's used for explicit refresh calls from the UI/other parts.
+  @override
+  Future<void> refreshData(String businessId) async {
+    // Simply call loadData, which uses executeLoad.
+    // The businessId is now explicitly passed from the caller of refreshData.
+    await loadData(businessId);
   }
 
   Future<void> addSale(Sale sale) async {
     try {
+      // Temporarily emit loading state. businessId cannot be passed here.
+      emit(const BusinessDataLoading());
       await _salesRepository.addSale(sale);
-
-      final currentBusinessState = _businessCubit.state;
-      if (currentBusinessState is BusinessLoaded &&
-          currentBusinessState.selectedBusiness != null) {
-        await loadData(currentBusinessState.selectedBusiness!.id);
-      } else {
-        emit(
-          BusinessDataError(
-            'Sale added, but no business selected to refresh list.',
-          ),
-        );
-      }
+      await _refreshSalesAfterAction(); // Refresh data after action
     } catch (e) {
+      // Emit error state. businessId cannot be passed here.
       emit(BusinessDataError('Failed to add sale: ${e.toString()}'));
     }
   }
 
   Future<void> updateSale(Sale sale) async {
     try {
-      emit(BusinessDataLoading());
+      emit(const BusinessDataLoading());
       await _salesRepository.updateSale(sale);
-      final currentBusinessState = _businessCubit.state;
-      if (currentBusinessState is BusinessLoaded &&
-          currentBusinessState.selectedBusiness != null) {
-        await loadData(currentBusinessState.selectedBusiness!.id);
-      }
+      await _refreshSalesAfterAction();
     } catch (e) {
       emit(BusinessDataError('Failed to update sale: ${e.toString()}'));
     }
@@ -89,21 +71,30 @@ class SalesCubit extends BusinessDataBloc<List<Sale>> {
 
   Future<void> deleteSale(String saleId) async {
     try {
-      emit(BusinessDataLoading());
+      emit(const BusinessDataLoading());
       await _salesRepository.deleteSale(saleId);
-      final currentBusinessState = _businessCubit.state;
-      if (currentBusinessState is BusinessLoaded &&
-          currentBusinessState.selectedBusiness != null) {
-        await loadData(currentBusinessState.selectedBusiness!.id);
-      }
+      await _refreshSalesAfterAction();
     } catch (e) {
       emit(BusinessDataError('Failed to delete sale: ${e.toString()}'));
     }
   }
 
+  // This method ensures the sales list is refreshed after an action (add, update, delete).
+  Future<void> _refreshSalesAfterAction() async {
+    final currentBusinessState = _businessCubit.state;
+    if (currentBusinessState is BusinessLoaded &&
+        currentBusinessState.selectedBusiness != null) {
+      // Call loadData (which uses executeLoad) with the ID of the currently selected business.
+      await loadData(currentBusinessState.selectedBusiness!.id);
+    } else {
+      // If no business is selected, emit a generic error state as businessId is not available
+      emit(const BusinessDataError('No business selected to refresh sales.'));
+    }
+  }
+
   @override
   Future<void> close() {
-    _loader.dispose();
+    _loader.dispose(); // Dispose the BusinessDataLoader's stream subscription
     return super.close();
   }
 }

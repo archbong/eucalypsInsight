@@ -1,4 +1,5 @@
 // lib/features/business/presentation/screens/business_selection_screen.dart
+import 'package:eucalysp_insight_app/features/business/presentation/screens/create_business_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -62,8 +63,25 @@ class BusinessSelectionScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           } else if (state is BusinessLoaded) {
             if (state.availableBusinesses.isEmpty) {
-              return const Center(
-                child: Text('No businesses found for your account.'),
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('No businesses found for your account.'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const CreateBusinessScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text('Create a Business'),
+                    ),
+                  ],
+                ),
               );
             }
             return ListView.builder(

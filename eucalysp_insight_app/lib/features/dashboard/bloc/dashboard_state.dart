@@ -1,6 +1,6 @@
 // lib/features/dashboard/bloc/dashboard_state.dart
 import 'package:equatable/equatable.dart';
-import 'package:eucalysp_insight_app/features/dashboard/domain/entities/dashboard_data.dart';
+import 'package:eucalysp_insight_app/features/dashboard/domain/models/dashboard_data.dart';
 
 abstract class DashboardState extends Equatable {
   const DashboardState();

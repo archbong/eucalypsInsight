@@ -22,16 +22,18 @@ class ProductAdapter extends TypeAdapter<Product> {
       name: fields[2] as String,
       sku: fields[3] as String,
       description: fields[4] as String,
-      quantity: fields[5] as int,
-      price: fields[6] as double,
+      quantity: (fields[5] as int?) ?? 0,
+      price: (fields[6] as double?) ?? 0.0,
       category: fields[7] as String?,
+      variants: (fields[8] as List?)?.cast<Variant>(),
+      lowStockThreshold: (fields[9] as int?) ?? 0,
     );
   }
 
   @override
   void write(BinaryWriter writer, Product obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -47,7 +49,11 @@ class ProductAdapter extends TypeAdapter<Product> {
       ..writeByte(6)
       ..write(obj.price)
       ..writeByte(7)
-      ..write(obj.category);
+      ..write(obj.category)
+      ..writeByte(8)
+      ..write(obj.variants)
+      ..writeByte(9)
+      ..write(obj.lowStockThreshold);
   }
 
   @override

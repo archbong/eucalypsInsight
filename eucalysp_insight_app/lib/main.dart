@@ -1,8 +1,9 @@
 // lib/main.dart - THIS IS THE CORRECT VERSION
-import 'package:flutter/foundation.dart'; // Added for debugPrint
+import 'package:eucalysp_insight_app/app/app_theme.dart';
+import 'package:eucalysp_insight_app/features/business/domain/entities/business.dart';
 import 'package:eucalysp_insight_app/features/inventory/bloc/inventory_cubit.dart';
-import 'package:eucalysp_insight_app/features/inventory/data/repositories/inventory_repository.dart';
 import 'package:eucalysp_insight_app/features/inventory/domain/entities/product.dart';
+import 'package:eucalysp_insight_app/features/sales/bloc/sales_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart'; // Required for MultiBlocProvider and BlocProvider
 import 'package:eucalysp_insight_app/app/core/service_locator.dart'; // For GetIt
@@ -10,8 +11,11 @@ import 'package:eucalysp_insight_app/app/app_router.dart'; // Your GoRouter conf
 import 'package:eucalysp_insight_app/features/auth/bloc/auth_cubit.dart'; // AuthCubit
 import 'package:eucalysp_insight_app/features/business/bloc/business_cubit.dart';
 import 'package:hive_flutter/adapters.dart'; // BusinessCubit
+import 'package:eucalysp_insight_app/features/inventory/domain/entities/variant.dart'; // <--- Add this import
 
-// ADD THIS IMPORT STATEMENT FOR THE GENERATED ADAPTER
+// Key for storing onboarding status in Hive (copy from app_router.dart for consistency)
+const String _onboardingBoxName = 'appSettings';
+const String _onboardingKey = 'hasSeenOnboarding';
 
 void main() async {
   debugPrint('[MAIN] Starting app initialization');
@@ -25,6 +29,14 @@ void main() async {
     if (!Hive.isAdapterRegistered(0)) {
       debugPrint('[MAIN] Registering ProductAdapter');
       Hive.registerAdapter(ProductAdapter());
+    }
+    if (!Hive.isAdapterRegistered(1)) {
+      Hive.registerAdapter(BusinessAdapter());
+    }
+    if (!Hive.isAdapterRegistered(2)) {
+      // <--- Assign a unique typeId, for example 2
+      debugPrint('[MAIN] Registering VariantAdapter');
+      Hive.registerAdapter(VariantAdapter());
     }
     debugPrint('[MAIN] Hive initialized successfully');
   } catch (e) {
@@ -52,6 +64,7 @@ void main() async {
         // Provide BusinessCubit: it's fetched from GetIt.
         BlocProvider(create: (context) => sl<BusinessCubit>()),
         BlocProvider(create: (context) => sl<InventoryCubit>()),
+        BlocProvider(create: (context) => sl<SalesCubit>()),
       ],
       // Use a Builder widget. This is crucial!
       // It provides a new BuildContext that is a descendant of MultiBlocProvider.
@@ -63,13 +76,12 @@ void main() async {
           final businessCubit = context.read<BusinessCubit>();
           debugPrint('[MAIN] Building MaterialApp.router...');
           return MaterialApp.router(
-            title: 'EncalyspInsight', // Application title
-            debugShowCheckedModeBanner:
-                false, // Set to true for debugging banner
-            theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-              useMaterial3: true,
-            ),
+            title: 'EncalyspInsight',
+            debugShowCheckedModeBanner: false,
+            theme: buildAppTheme(), // Your custom light theme
+            darkTheme: buildDarkAppTheme(), // Your custom dark theme
+            themeMode: ThemeMode
+                .system, // Dynamically switch based on system preference
             routerConfig: buildAppRouter(
               authCubit: authCubit,
               businessCubit: businessCubit,

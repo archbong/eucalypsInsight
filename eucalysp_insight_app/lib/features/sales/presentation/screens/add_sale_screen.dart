@@ -1,3 +1,4 @@
+import 'package:eucalysp_insight_app/app/core/bloc/business_data_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:eucalysp_insight_app/features/sales/bloc/sales_cubit.dart';
@@ -19,6 +20,8 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
   DateTime _saleDate = DateTime.now();
   final List<SaleItem> _items = [];
   double _totalAmount = 0.0;
+  String _paymentStatus = 'Pending';
+  String _notes = '';
 
   @override
   void dispose() {
@@ -49,6 +52,8 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
         saleDate: _saleDate,
         totalAmount: _totalAmount,
         items: List.from(_items),
+        paymentStatus: _paymentStatus,
+        notes: _notes,
       );
       context.read<SalesCubit>().addSale(newSale);
       Navigator.pop(context);
@@ -72,6 +77,7 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -80,67 +86,107 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
           IconButton(icon: const Icon(Icons.save), onPressed: _submitForm),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                controller: _customerController,
-                decoration: const InputDecoration(
-                  labelText: 'Customer Name *',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Required field' : null,
-              ),
-              const SizedBox(height: 16),
-              InkWell(
-                onTap: () => _selectDate(context),
-                child: InputDecorator(
+      body: BlocListener<SalesCubit, BusinessDataState<List<Sale>>>(
+        listener: (context, state) {
+          switch (state) {
+            case BusinessDataInitial<List<Sale>>():
+              break;
+            case BusinessDataLoading<List<Sale>>():
+              break;
+            case BusinessDataLoaded<List<Sale>>():
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Sale saved successfully!')),
+              );
+              Navigator.pop(context);
+              break;
+            case BusinessDataError<List<Sale>>(:final message):
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error saving sale: $message')),
+              );
+              break;
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              children: [
+                TextFormField(
+                  controller: _customerController,
                   decoration: const InputDecoration(
-                    labelText: 'Sale Date *',
+                    labelText: 'Customer Name *',
                     border: OutlineInputBorder(),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(DateFormat.yMd().format(_saleDate)),
-                      const Icon(Icons.calendar_today),
-                    ],
+                  validator: (value) =>
+                      value?.isEmpty ?? true ? 'Required' : null,
+                ),
+                const SizedBox(height: 16),
+                InkWell(
+                  onTap: () => _selectDate(context),
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Sale Date *',
+                      border: OutlineInputBorder(),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(DateFormat.yMd().format(_saleDate)),
+                        const Icon(Icons.calendar_today),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Items:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              ..._items.map(
-                (item) => ListTile(
-                  title: Text(item.productName),
-                  subtitle: Text(
-                    '${item.quantity} x \$${item.unitPrice.toStringAsFixed(2)} = \$${item.subtotal.toStringAsFixed(2)}',
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: _paymentStatus,
+                  decoration: const InputDecoration(
+                    labelText: 'Payment Status *',
+                    border: OutlineInputBorder(),
                   ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete),
-                    onPressed: () => _removeItem(_items.indexOf(item)),
+                  items: const [
+                    DropdownMenuItem(value: 'Paid', child: Text('Paid')),
+                    DropdownMenuItem(value: 'Pending', child: Text('Pending')),
+                    DropdownMenuItem(
+                      value: 'Refunded',
+                      child: Text('Refunded'),
+                    ),
+                  ],
+                  onChanged: (value) => setState(() => _paymentStatus = value!),
+                  validator: (value) => value == null ? 'Required' : null,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Items:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                ..._items.map(
+                  (item) => ListTile(
+                    title: Text(item.productName),
+                    subtitle: Text(
+                      '${item.quantity} x \$${item.unitPrice} = \$${item.subtotal}',
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () => _removeItem(_items.indexOf(item)),
+                    ),
                   ),
                 ),
-              ),
-              const Divider(),
-              Text(
-                'Total: \$${_totalAmount.toStringAsFixed(2)}',
-                style: Theme.of(context).textTheme.titleLarge,
-                textAlign: TextAlign.right,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () => _showAddItemDialog(context),
-                child: const Text('Add Item'),
-              ),
-            ],
+                ElevatedButton(
+                  onPressed: () => _showAddItemDialog(context),
+                  child: const Text('Add Item'),
+                ),
+                TextFormField(
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes',
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (value) => _notes = value,
+                ),
+              ],
+            ),
           ),
         ),
       ),

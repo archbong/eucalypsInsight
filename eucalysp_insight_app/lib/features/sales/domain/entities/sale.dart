@@ -1,14 +1,17 @@
 // lib/features/sales/domain/entities/sale.dart
 import 'package:equatable/equatable.dart';
 import 'package:eucalysp_insight_app/features/sales/domain/entities/sale_item.dart';
+import 'package:intl/intl.dart';
 
 class Sale extends Equatable {
   final String id;
-  final String businessId; // To link sale to a specific business
+  final String businessId;
   final DateTime saleDate;
   final String customerName;
   final double totalAmount;
   final List<SaleItem> items;
+  final String paymentStatus;
+  final String notes;
 
   const Sale({
     required this.id,
@@ -17,6 +20,8 @@ class Sale extends Equatable {
     required this.customerName,
     required this.totalAmount,
     required this.items,
+    required this.paymentStatus,
+    required this.notes,
   });
 
   factory Sale.fromJson(Map<String, dynamic> json) {
@@ -31,6 +36,10 @@ class Sale extends Equatable {
             (itemJson) => SaleItem.fromJson(itemJson as Map<String, dynamic>),
           )
           .toList(),
+      paymentStatus:
+          json['paymentStatus'] as String? ??
+          'Pending', // Default to 'Pending' if missing
+      notes: json['notes'] as String? ?? '',
     );
   }
 
@@ -42,6 +51,8 @@ class Sale extends Equatable {
       'customerName': customerName,
       'totalAmount': totalAmount,
       'items': items.map((item) => item.toJson()).toList(),
+      'paymentStatus': paymentStatus,
+      'notes': notes,
     };
   }
 
@@ -53,7 +64,29 @@ class Sale extends Equatable {
     customerName,
     totalAmount,
     items,
+    paymentStatus,
+    notes,
   ];
+
+  static Map<String, double> calculateMonthlyTrends(List<Sale> sales) {
+    final Map<String, double> monthlySales = {};
+    for (final sale in sales) {
+      final month = DateFormat('MMM').format(sale.saleDate);
+      monthlySales[month] = (monthlySales[month] ?? 0) + sale.totalAmount;
+    }
+    return monthlySales;
+  }
+
+  static Map<String, double> calculateTopProducts(List<Sale> sales) {
+    final Map<String, double> productSales = {};
+    for (final sale in sales) {
+      for (final item in sale.items) {
+        productSales[item.productName] =
+            (productSales[item.productName] ?? 0) + item.subtotal;
+      }
+    }
+    return productSales;
+  }
 
   Sale copyWith({
     String? id,
@@ -62,6 +95,8 @@ class Sale extends Equatable {
     String? customerName,
     double? totalAmount,
     List<SaleItem>? items,
+    String? paymentStatus,
+    String? notes,
   }) {
     return Sale(
       id: id ?? this.id,
@@ -70,6 +105,8 @@ class Sale extends Equatable {
       customerName: customerName ?? this.customerName,
       totalAmount: totalAmount ?? this.totalAmount,
       items: items ?? List.from(this.items),
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      notes: notes ?? this.notes,
     );
   }
 }

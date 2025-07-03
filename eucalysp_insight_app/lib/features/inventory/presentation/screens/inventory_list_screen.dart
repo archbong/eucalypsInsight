@@ -1,7 +1,6 @@
-// business-app/eucalypsInsight/eucalysp_insight_app/lib/features/inventory/presentation/screens/inventory_list_screen.dart
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:eucalysp_insight_app/features/inventory/utils/report_utils.dart';
-import 'package:eucalysp_insight_app/features/business/bloc/business_cubit.dart'; // Used for fetching business ID if needed
+import 'package:eucalysp_insight_app/features/business/bloc/business_cubit.dart';
 import 'package:eucalysp_insight_app/features/business/bloc/business_state.dart';
 import 'package:eucalysp_insight_app/features/inventory/bloc/inventory_cubit.dart';
 import 'package:eucalysp_insight_app/features/inventory/presentation/screens/add_inventory_screen.dart';
@@ -9,7 +8,7 @@ import 'package:eucalysp_insight_app/features/inventory/presentation/screens/edi
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:eucalysp_insight_app/features/inventory/bloc/inventory_state.dart';
-import 'package:eucalysp_insight_app/features/inventory/domain/entities/product.dart';
+import 'package:eucalysp_insight_app/app/app_theme.dart'; // Import your app theme for colors and text styles
 
 class InventoryListScreen extends StatefulWidget {
   const InventoryListScreen({super.key});
@@ -22,14 +21,11 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
   final Set<String> _selectedItems = {};
   bool _isSelectMode = false;
 
-  // Local filter states that will be passed to Cubit
-  String?
-  _selectedCategory; // This should be updated based on cubit's current filter
+  String? _selectedCategory;
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _minPriceController = TextEditingController();
   final TextEditingController _maxPriceController = TextEditingController();
 
-  // Temporary controllers for bulk update dialog
   final TextEditingController _bulkUpdatePriceController =
       TextEditingController();
   final TextEditingController _bulkUpdateQuantityController =
@@ -38,9 +34,6 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
   @override
   void initState() {
     super.initState();
-    // REMOVED: context.read<InventoryCubit>().fetchProducts("biz1");
-    // The InventoryCubit's constructor already listens to BusinessCubit
-    // and fetches products when a business is selected.
   }
 
   @override
@@ -53,17 +46,44 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
     super.dispose();
   }
 
-  // Helper to re-apply all current filters to the Cubit
   void _applyFiltersToCubit() {
     final double? minPrice = double.tryParse(_minPriceController.text);
     final double? maxPrice = double.tryParse(_maxPriceController.text);
 
-    context.read<InventoryCubit>().filterProducts(
-      _searchController.text,
-      category: _selectedCategory,
-      minPrice: minPrice,
-      maxPrice: maxPrice,
-    );
+    final inventoryCubit = context.read<InventoryCubit>();
+
+    inventoryCubit.searchProducts(_searchController.text);
+    inventoryCubit.filterByCategory(_selectedCategory);
+    inventoryCubit.filterByPriceRange(minPrice, maxPrice);
+  }
+
+  // --- Start of UI Improvements for No Products State ---
+  void _navigateToAddInventoryScreen(BuildContext context) {
+    final businessState = context.read<BusinessCubit>().state;
+    if (businessState is BusinessLoaded &&
+        businessState.selectedBusiness != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AddInventoryScreen(
+            businessId: businessState.selectedBusiness!.id,
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Please select a business first',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium!.copyWith(color: AppColors.textInverse),
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -88,19 +108,23 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
               onPressed: () async {
                 final state = context.read<InventoryCubit>().state;
                 if (state is InventoryLoaded) {
-                  // Use filteredProducts if active, otherwise allProducts
                   final productsToExport = state.filteredProducts.isNotEmpty
                       ? state.filteredProducts
                       : state.allProducts;
 
                   if (productsToExport.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('No products to export.')),
+                      SnackBar(
+                        content: Text(
+                          'No products to export.',
+                          style: Theme.of(context).textTheme.bodyMedium!
+                              .copyWith(color: AppColors.textInverse),
+                        ),
+                      ),
                     );
                     return;
                   }
 
-                  // Show a dialog for CSV or PDF
                   showDialog(
                     context: context,
                     builder: (ctx) => AlertDialog(
@@ -168,8 +192,15 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('No products available for export.'),
+                    SnackBar(
+                      content: Text(
+                        'No products available for export.',
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          color: AppColors.textInverse,
+                        ),
+                      ),
+                      backgroundColor: AppColors.error,
+                      behavior: SnackBarBehavior.floating,
                     ),
                   );
                 }
@@ -182,14 +213,9 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
           ],
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(
-            120,
-          ), // Adjusted height for clarity
+          preferredSize: const Size.fromHeight(120),
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ), // Added vertical padding
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Column(
               children: [
                 TextField(
@@ -198,14 +224,16 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                     hintText: 'Search products...',
                     prefixIcon: const Icon(Icons.search),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(
+                        AppRadius.lg,
+                      ), // Using AppRadius
                     ),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear),
                             onPressed: () {
                               _searchController.clear();
-                              _applyFiltersToCubit(); // Re-apply filters after clearing
+                              _applyFiltersToCubit();
                             },
                           )
                         : null,
@@ -217,7 +245,6 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                   children: [
                     Expanded(
                       child: BlocBuilder<InventoryCubit, InventoryState>(
-                        // Use BlocBuilder to get updated categories list
                         builder: (context, state) {
                           List<String> categories = [];
                           if (state is InventoryLoaded) {
@@ -227,19 +254,31 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                           }
                           return DropdownButtonHideUnderline(
                             child: DropdownButton2<String>(
-                              hint: const Text('Category'),
-                              value:
-                                  _selectedCategory, // Set initial value from local state
+                              hint: Text(
+                                'Category',
+                                style: Theme.of(context).textTheme.bodyMedium!
+                                    .copyWith(color: AppColors.textMuted),
+                              ),
+                              value: _selectedCategory,
                               items: [
-                                // Option to clear category filter
-                                const DropdownMenuItem(
+                                DropdownMenuItem(
                                   value: null,
-                                  child: Text('All Categories'),
+                                  child: Text(
+                                    'All Categories',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium,
+                                  ),
                                 ),
                                 ...categories.map(
                                   (category) => DropdownMenuItem(
                                     value: category,
-                                    child: Text(category),
+                                    child: Text(
+                                      category,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -247,7 +286,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                                 setState(() {
                                   _selectedCategory = category;
                                 });
-                                _applyFiltersToCubit(); // Re-apply all filters
+                                _applyFiltersToCubit();
                               },
                               buttonStyleData: ButtonStyleData(
                                 height: 40,
@@ -255,8 +294,12 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                                   horizontal: 10,
                                 ),
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: Colors.grey),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.lg,
+                                  ), // Using AppRadius
+                                  border: Border.all(
+                                    color: AppColors.border,
+                                  ), // Using AppColors
                                 ),
                               ),
                               menuItemStyleData: const MenuItemStyleData(
@@ -274,7 +317,9 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                         decoration: InputDecoration(
                           hintText: 'Min Price',
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.lg,
+                            ), // Using AppRadius
                           ),
                           suffixIcon: _minPriceController.text.isNotEmpty
                               ? IconButton(
@@ -297,7 +342,9 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                         decoration: InputDecoration(
                           hintText: 'Max Price',
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.lg,
+                            ), // Using AppRadius
                           ),
                           suffixIcon: _maxPriceController.text.isNotEmpty
                               ? IconButton(
@@ -321,62 +368,145 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
         ),
       ),
       body: BlocListener<InventoryCubit, InventoryState>(
-        // Listen for specific states for SnackBar/Dialog feedback
         listener: (context, state) {
           if (state is InventoryError) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text('Error: ${state.message}')));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Error: ${state.message}',
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    color: AppColors.textInverse,
+                  ),
+                ),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
           } else if (state is InventoryLoaded && state.message != null) {
-            // For offline data warning
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message!)));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.message!,
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    color: AppColors.textInverse,
+                  ),
+                ),
+                backgroundColor: AppColors.info, // Use info color for warnings
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
           }
-          // You could also add InventoryActionSuccess here if you implement it
         },
         child: BlocBuilder<InventoryCubit, InventoryState>(
           builder: (context, state) {
             if (state is InventoryInitial || state is InventoryLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primary, // Use primary color for loader
+                ),
+              );
             } else if (state is InventoryLoaded) {
-              // Use filteredProducts for display
               final products = state.filteredProducts;
               if (products.isEmpty) {
-                // Determine if no products found due to filters or genuinely empty
                 final bool isFilteredEmpty =
                     state.allProducts.isNotEmpty &&
                     state.filteredProducts.isEmpty;
                 return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.inventory_2,
-                        size: 48,
-                        color: Colors.grey,
+                  // Added a FadeTransition for a smoother appearance
+                  child: FadeTransition(
+                    opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+                      CurvedAnimation(
+                        parent: ModalRoute.of(context)!.animation!,
+                        curve: Curves.easeIn,
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        isFilteredEmpty
-                            ? 'No products match your filters.'
-                            : 'No products found for this business.',
-                      ),
-                      if (isFilteredEmpty)
-                        TextButton(
-                          onPressed: () {
-                            // Clear all filter controllers and reset Cubit filters
-                            _searchController.clear();
-                            _minPriceController.clear();
-                            _maxPriceController.clear();
-                            setState(() {
-                              _selectedCategory = null;
-                            });
-                            context.read<InventoryCubit>().resetFilters();
-                          },
-                          child: const Text('Clear Filters'),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isFilteredEmpty
+                              ? Icons.filter_alt_off
+                              : Icons.inventory_2_outlined,
+                          size: 80, // Larger icon
+                          color: AppColors.textMuted, // Muted color from theme
                         ),
-                    ],
+                        const SizedBox(height: 24), // More vertical space
+                        Text(
+                          isFilteredEmpty
+                              ? 'No products found matching your criteria.'
+                              : 'Your inventory is empty.',
+                          style: Theme.of(context).textTheme.titleLarge!
+                              .copyWith(
+                                color: AppColors
+                                    .textDark, // Use dark text for prominence
+                                fontWeight: FontWeight.bold,
+                              ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          isFilteredEmpty
+                              ? 'Try clearing your filters or adjusting them.'
+                              : 'Add your first product to get started.',
+                          style: Theme.of(context).textTheme.bodyLarge!
+                              .copyWith(
+                                color: AppColors
+                                    .textLight, // Lighter text for subtitle
+                              ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        if (isFilteredEmpty)
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              _searchController.clear();
+                              _minPriceController.clear();
+                              _maxPriceController.clear();
+                              setState(() {
+                                _selectedCategory = null;
+                              });
+                              context.read<InventoryCubit>().resetFilters();
+                            },
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Clear Filters'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors
+                                  .accent3, // A neutral button for clearing filters
+                              foregroundColor: AppColors.textInverse,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.lg,
+                                ),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
+                            ),
+                          )
+                        else // If truly empty, offer to add product
+                          ElevatedButton.icon(
+                            onPressed: () =>
+                                _navigateToAddInventoryScreen(context),
+                            icon: const Icon(Icons.add_circle_outline),
+                            label: const Text('Add Your First Product'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors
+                                  .primary, // Primary button for adding
+                              foregroundColor: AppColors.textInverse,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.lg,
+                                ),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 14,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 );
               }
@@ -388,29 +518,44 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                   return Dismissible(
                     key: Key(product.id),
                     background: Container(
-                      color: Colors.red,
+                      color: AppColors.error, // Use theme error color
                       alignment: Alignment.centerRight,
                       padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: const Icon(Icons.delete, color: Colors.white),
+                      child: const Icon(
+                        Icons.delete,
+                        color: AppColors.textInverse,
+                      ), // Use inverse text color
                     ),
-                    direction: DismissDirection
-                        .endToStart, // Only swipe left to delete
+                    direction: DismissDirection.endToStart,
                     confirmDismiss: (direction) async {
                       return await showDialog(
                         context: context,
                         builder: (ctx) => AlertDialog(
-                          title: const Text('Confirm Deletion'),
+                          title: Text(
+                            'Confirm Deletion',
+                            style: Theme.of(context).textTheme.titleMedium!
+                                .copyWith(color: AppColors.textDark),
+                          ),
                           content: Text(
                             'Are you sure you want to delete ${product.name}?',
+                            style: Theme.of(context).textTheme.bodyMedium!
+                                .copyWith(color: AppColors.textLight),
                           ),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.of(ctx).pop(false),
-                              child: const Text('Cancel'),
+                              child: Text(
+                                'Cancel',
+                                style: TextStyle(color: AppColors.textLight),
+                              ),
                             ),
                             FilledButton(
                               onPressed: () => Navigator.of(ctx).pop(true),
                               child: const Text('Delete'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.error,
+                                foregroundColor: AppColors.textInverse,
+                              ),
                             ),
                           ],
                         ),
@@ -418,10 +563,6 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                     },
                     onDismissed: (direction) {
                       context.read<InventoryCubit>().deleteProduct(product.id);
-                      // SnackBar feedback is now handled by BlocListener
-                      // ScaffoldMessenger.of(context).showSnackBar(
-                      //   SnackBar(content: Text('Product deleted')),
-                      // );
                     },
                     child: InkWell(
                       onTap: () {
@@ -439,11 +580,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                             context,
                             MaterialPageRoute(
                               builder: (context) => BlocProvider.value(
-                                // <--- ADD THIS LINE
-                                value: context
-                                    .read<
-                                      InventoryCubit
-                                    >(), // <--- AND THIS LINE
+                                value: context.read<InventoryCubit>(),
                                 child: EditInventoryScreen(product: product),
                               ),
                             ),
@@ -452,28 +589,82 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                       },
                       child: Container(
                         color: _selectedItems.contains(product.id)
-                            ? Colors.blue.withOpacity(0.2)
+                            ? AppColors.primary.withOpacity(
+                                0.1,
+                              ) // Use primary color for selection
                             : null,
                         child: Card(
                           margin: const EdgeInsets.only(bottom: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.lg,
+                            ), // Use AppRadius
+                            side: BorderSide(
+                              color: _selectedItems.contains(product.id)
+                                  ? AppColors
+                                        .primary // Highlight border when selected
+                                  : AppColors.cardBorder,
+                              width: _selectedItems.contains(product.id)
+                                  ? 1.5
+                                  : 1.0,
+                            ),
+                          ),
+                          elevation: _selectedItems.contains(product.id)
+                              ? 4
+                              : 2, // Higher elevation when selected
                           child: ListTile(
                             leading: CircleAvatar(
                               backgroundColor: Theme.of(
                                 context,
                               ).colorScheme.primaryContainer,
                               child: Text(
-                                product.name[0]
-                                    .toUpperCase(), // Ensure uppercase
-                                style: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onPrimaryContainer,
-                                ),
+                                product.name[0].toUpperCase(),
+                                style: Theme.of(context).textTheme.titleMedium!
+                                    .copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onPrimaryContainer,
+                                    ),
                               ),
                             ),
-                            title: Text(product.name),
-                            subtitle: Text(
-                              'SKU: ${product.sku} | Qty: ${product.quantity} | \$${product.price.toStringAsFixed(2)}',
+                            title: Text(
+                              product.name,
+                              style: Theme.of(context).textTheme.titleMedium!
+                                  .copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'SKU: ${product.sku} | Qty: ${product.quantity} | \$${product.price.toStringAsFixed(2)}',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                                if (product.variants!.isNotEmpty)
+                                  Text(
+                                    'Variants: ${product.variants?.map((v) => v.name).join(', ')}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall!
+                                        .copyWith(color: AppColors.textMuted),
+                                  ),
+                                if (product.quantity <=
+                                    product.lowStockThreshold)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4.0),
+                                    child: Text(
+                                      'LOW STOCK!',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall!
+                                          .copyWith(
+                                            color: AppColors
+                                                .error, // Use theme error color
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.5,
+                                          ),
+                                    ),
+                                  ),
+                              ],
                             ),
                             trailing: _isSelectMode
                                 ? Checkbox(
@@ -490,10 +681,14 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                                         }
                                       });
                                     },
+                                    activeColor: AppColors
+                                        .primary, // Use primary for active checkbox
                                   )
                                 : const Icon(
                                     Icons.arrow_forward_ios,
                                     size: 16.0,
+                                    color:
+                                        AppColors.textMuted, // Muted icon color
                                   ),
                           ),
                         ),
@@ -502,50 +697,13 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                   );
                 },
               );
-            } else if (state is InventoryError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 50,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Error: ${state.message}',
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        // Re-fetch products when retry is pressed
-                        final businessState = context
-                            .read<BusinessCubit>()
-                            .state;
-                        if (businessState is BusinessLoaded &&
-                            businessState.selectedBusiness != null) {
-                          context.read<InventoryCubit>().fetchProducts(
-                            businessState.selectedBusiness!.id,
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'No business selected to fetch inventory.',
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              );
             }
-            return const Center(child: Text('Unknown state'));
+            return Center(
+              child: Text(
+                'Unknown state',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+            );
           },
         ),
       ),
@@ -553,18 +711,15 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
           ? Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                if (_selectedItems
-                    .isNotEmpty) // Only show if items are selected
-                  FloatingActionButton(
+                if (_selectedItems.isNotEmpty)
+                  FloatingActionButton.extended(
+                    // Use extended for clarity
                     heroTag: 'bulk_update',
                     onPressed: () {
-                      if (_selectedItems.isEmpty)
-                        return; // Should not happen with the check above
+                      if (_selectedItems.isEmpty) return;
 
-                      _bulkUpdatePriceController
-                          .clear(); // Clear previous values
-                      _bulkUpdateQuantityController
-                          .clear(); // Clear previous values
+                      _bulkUpdatePriceController.clear();
+                      _bulkUpdateQuantityController.clear();
 
                       showDialog(
                         context: context,
@@ -597,9 +752,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                           ),
                           actions: [
                             TextButton(
-                              onPressed: () {
-                                Navigator.pop(ctx);
-                              },
+                              onPressed: () => Navigator.pop(ctx),
                               child: const Text('Cancel'),
                             ),
                             FilledButton(
@@ -613,20 +766,26 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
 
                                 if (price == null && quantity == null) {
                                   ScaffoldMessenger.of(ctx).showSnackBar(
-                                    const SnackBar(
+                                    SnackBar(
                                       content: Text(
                                         'Please enter a price or quantity to update.',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium!
+                                            .copyWith(
+                                              color: AppColors.textInverse,
+                                            ),
                                       ),
+                                      backgroundColor: AppColors.warning,
+                                      behavior: SnackBarBehavior.floating,
                                     ),
                                   );
                                   return;
                                 }
 
-                                final int itemsToUpdateCount = _selectedItems
-                                    .length; // Capture count before clearing
-                                Navigator.pop(
-                                  ctx,
-                                ); // Dismiss dialog immediately
+                                final int itemsToUpdateCount =
+                                    _selectedItems.length;
+                                Navigator.pop(ctx);
 
                                 await context.read<InventoryCubit>().bulkUpdate(
                                   _selectedItems.toList(),
@@ -634,13 +793,19 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                                   quantity: quantity,
                                 );
 
-                                // The Cubit will emit a new state, and BlocListener can show general success/error.
-                                // However, for immediate user feedback on THIS action:
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
                                       'Bulk update for $itemsToUpdateCount items initiated.',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium!
+                                          .copyWith(
+                                            color: AppColors.textInverse,
+                                          ),
                                     ),
+                                    backgroundColor: AppColors.info,
+                                    behavior: SnackBarBehavior.floating,
                                   ),
                                 );
 
@@ -650,108 +815,111 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                                 });
                               },
                               child: const Text('Apply Update'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: AppColors.textInverse,
+                              ),
                             ),
                           ],
                         ),
                       );
                     },
-                    child: const Icon(Icons.attach_money),
+                    label: const Text('Update'),
+                    icon: const Icon(Icons.edit),
+                    backgroundColor: AppColors.primaryLight,
+                    foregroundColor: AppColors.textInverse,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
                   ),
                 const SizedBox(width: 16),
-                if (_selectedItems
-                    .isNotEmpty) // Only show if items are selected
-                  FloatingActionButton(
+                if (_selectedItems.isNotEmpty)
+                  FloatingActionButton.extended(
+                    // Use extended for clarity
                     heroTag: 'bulk_delete',
                     onPressed: () async {
-                      if (_selectedItems.isEmpty)
-                        return; // Should not happen with the check above
+                      if (_selectedItems.isEmpty) return;
 
-                      final bool confirm = await showDialog(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Confirm Bulk Delete'),
-                          content: Text(
-                            'Are you sure you want to delete ${_selectedItems.length} selected items?',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(false),
-                              child: const Text('Cancel'),
+                      final bool confirm =
+                          await showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Confirm Bulk Delete'),
+                              content: Text(
+                                'Are you sure you want to delete ${_selectedItems.length} selected items?',
+                                style: Theme.of(context).textTheme.bodyMedium!
+                                    .copyWith(color: AppColors.textLight),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(false),
+                                  child: Text(
+                                    'Cancel',
+                                    style: TextStyle(
+                                      color: AppColors.textLight,
+                                    ),
+                                  ),
+                                ),
+                                FilledButton(
+                                  onPressed: () => Navigator.of(ctx).pop(true),
+                                  child: const Text('Delete All'),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppColors.error,
+                                    foregroundColor: AppColors.textInverse,
+                                  ),
+                                ),
+                              ],
                             ),
-                            FilledButton(
-                              onPressed: () => Navigator.of(ctx).pop(true),
-                              child: const Text('Delete'),
-                            ),
-                          ],
-                        ),
-                      );
+                          ) ??
+                          false; // Handle null if dialog is dismissed
 
                       if (confirm) {
-                        final int itemsToDeleteCount = _selectedItems
-                            .length; // Capture count before clearing
+                        final int itemsToDeleteCount = _selectedItems.length;
                         await context.read<InventoryCubit>().bulkDelete(
                           _selectedItems.toList(),
                         );
 
-                        // Cubit will emit new state; BlocListener handles general feedback.
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              'Bulk delete for $itemsToDeleteCount items initiated.',
+                              '${itemsToDeleteCount} items deleted.',
+                              style: Theme.of(context).textTheme.bodyMedium!
+                                  .copyWith(color: AppColors.textInverse),
                             ),
+                            backgroundColor:
+                                AppColors.success, // Success color for deletion
+                            behavior: SnackBarBehavior.floating,
                           ),
                         );
+
                         setState(() {
                           _selectedItems.clear();
                           _isSelectMode = false;
                         });
                       }
                     },
-                    child: const Icon(Icons.delete_forever),
+                    label: const Text('Delete'),
+                    icon: const Icon(Icons.delete_forever),
+                    backgroundColor: AppColors.error,
+                    foregroundColor: AppColors.textInverse,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
                   ),
               ],
             )
-          : FloatingActionButton(
-              onPressed: () async {
-                // Optionally pass current business ID if AddInventoryScreen needs it
-                final businessState = context.read<BusinessCubit>().state;
-                String? currentBusinessId;
-                if (businessState is BusinessLoaded &&
-                    businessState.selectedBusiness != null) {
-                  currentBusinessId = businessState.selectedBusiness!.id;
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Please select a business first to add inventory.',
-                      ),
-                    ),
-                  );
-                  return; // Don't proceed if no business selected
-                }
-
-                // Push and await result to trigger SnackBar only if product was successfully added
-                final bool? productAdded = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BlocProvider.value(
-                      // <--- ADD THIS LINE
-                      value: context
-                          .read<InventoryCubit>(), // <--- AND THIS LINE
-                      child: AddInventoryScreen(
-                        // <-- Your AddInventoryScreen
-                        businessId: currentBusinessId!,
-                      ),
-                    ),
-                  ),
-                );
-                if (productAdded == true) {
-                  // No need for a SnackBar here, AddInventoryScreen should handle its own success feedback
-                  // and the list will automatically update via Cubit's fetchProducts.
-                  // If you still want one, consider a more specific message or a global success listener.
-                }
-              },
-              child: const Icon(Icons.add),
+          : FloatingActionButton.extended(
+              onPressed: () => _navigateToAddInventoryScreen(context),
+              label: const Text('Add Product'),
+              icon: const Icon(Icons.add_shopping_cart), // More relevant icon
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.textInverse,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(
+                  AppRadius.lg,
+                ), // Consistent radius
+              ),
+              elevation: 6.0,
             ),
     );
   }

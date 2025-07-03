@@ -1,13 +1,16 @@
 // lib/app/core/service_locator.dart
-
 import 'package:eucalysp_insight_app/features/auth/bloc/auth_cubit.dart';
+import 'package:eucalysp_insight_app/features/dashboard/data/repositories/real_dashboard_repository.dart';
+import 'package:eucalysp_insight_app/features/dashboard/data/repositories/real_dashboard_repository.dart';
 import 'package:eucalysp_insight_app/features/business/bloc/business_cubit.dart';
 import 'package:eucalysp_insight_app/features/business/data/repositories/business_repository.dart';
+import 'package:eucalysp_insight_app/features/business/data/repositories/mock_business_repository.dart';
 // !!! IMPORTANT: VERIFY THIS PATH AND FILENAME MATCH YOUR PROJECT !!!
 import 'package:eucalysp_insight_app/features/dashboard/bloc/dashboard_cubit.dart';
 import 'package:eucalysp_insight_app/features/dashboard/data/repositories/dashboard_repository.dart';
 import 'package:eucalysp_insight_app/features/dashboard/data/repositories/mock_dashboard_repository.dart';
 import 'package:eucalysp_insight_app/features/inventory/bloc/inventory_cubit.dart';
+import 'package:eucalysp_insight_app/features/inventory/data/repositories/hive_inventory_repository.dart';
 import 'package:eucalysp_insight_app/features/inventory/data/repositories/inventory_repository.dart';
 // !!! IMPORTANT: VERIFY THIS PATH AND FILENAME MATCH YOUR PROJECT !!!
 import 'package:eucalysp_insight_app/features/sales/bloc/sales_cubit.dart';
@@ -57,7 +60,7 @@ extension SafeRegistration on GetIt {
     if (isRegistered<T>(instanceName: instanceName)) {
       if (!overrideIfExists) {
         // print('DEBUG: $T (instanceName: $instanceName) already registered. Skipping.');
-        return; // Already registered, and not overriding
+        return;
       }
       unregister<T>(instanceName: instanceName);
     }
@@ -90,12 +93,16 @@ Future<void> setupLocator() async {
   try {
     // --- Register Repositories ---
     // Repositories manage data sources (e.g., API, local storage).
-    sl.registerLazySingletonSafe<DashboardRepository>(
-      factoryFunc: () => MockDashboardRepository(),
-    );
+
     sl.registerLazySingletonSafe<BusinessRepository>(
       factoryFunc: () => MockBusinessRepository(),
     );
+    // sl.registerLazySingleton<InventoryRepository>(
+    //   factoryFunc: () => MockInventoryRepository(),
+    // );
+    // sl.registerLazySingletonSafe<InventoryRepository>(
+    //   factoryFunc: () => MockInventoryRepository(),
+    // );
 
     // Register HiveInventoryRepository as the concrete implementation for InventoryRepository.
     // It's registered as an async singleton because its `init()` method is asynchronous.
@@ -129,10 +136,19 @@ Future<void> setupLocator() async {
 
     // DashboardCubit manages data and logic for the dashboard screen.
     // It depends on DashboardRepository and BusinessCubit.
+    sl.registerLazySingletonSafe<DashboardRepository>(
+      factoryFunc: () => RealDashboardRepository(
+        salesCubit: sl<SalesCubit>(),
+        inventoryCubit: sl<InventoryCubit>(),
+      ),
+    );
+
     sl.registerLazySingletonSafe<DashboardCubit>(
       factoryFunc: () => DashboardCubit(
         dashboardRepository: sl<DashboardRepository>(),
         businessCubit: sl<BusinessCubit>(),
+        inventoryCubit: sl<InventoryCubit>(),
+        salesCubit: sl<SalesCubit>(),
       ),
     );
 

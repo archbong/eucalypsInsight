@@ -1,31 +1,49 @@
 // lib/app/core/bloc/business_data_bloc.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:equatable/equatable.dart'; // IMPORTANT: Add this import for Equatable
 
 /// Base state for all business data loading
-// CHANGE THIS LINE: Add the 'sealed' keyword
-sealed class BusinessDataState {}
+// FIX: Add the generic type parameter <T> here and make it extend Equatable
+sealed class BusinessDataState<T> extends Equatable {
+  const BusinessDataState(); // Add a const constructor
+
+  @override
+  List<Object?> get props => [];
+}
 
 /// Initial state before any data loading
-class BusinessDataInitial extends BusinessDataState {}
+class BusinessDataInitial<T> extends BusinessDataState<T> {
+  const BusinessDataInitial(); // Add a const constructor
+}
 
 /// Data loading in progress
-class BusinessDataLoading extends BusinessDataState {}
+class BusinessDataLoading<T> extends BusinessDataState<T> {
+  const BusinessDataLoading(); // Add a const constructor
+}
 
 /// Data successfully loaded
-class BusinessDataLoaded<T> extends BusinessDataState {
+class BusinessDataLoaded<T> extends BusinessDataState<T> {
   final T data;
-  BusinessDataLoaded(this.data);
+  const BusinessDataLoaded(this.data); // Add const constructor
+
+  @override
+  List<Object?> get props => [data]; // Implement props for Equatable
 }
 
 /// Error state with message
-class BusinessDataError extends BusinessDataState {
+class BusinessDataError<T> extends BusinessDataState<T> {
   final String message;
-  BusinessDataError(this.message);
+  const BusinessDataError(this.message); // Add const constructor
+
+  @override
+  List<Object?> get props => [message]; // Implement props for Equatable
 }
 
 /// Base bloc for business data loading functionality
-abstract class BusinessDataBloc<T> extends Cubit<BusinessDataState> {
-  BusinessDataBloc() : super(BusinessDataInitial());
+abstract class BusinessDataBloc<T> extends Cubit<BusinessDataState<T>> {
+  // Update Cubit type
+  BusinessDataBloc()
+    : super(const BusinessDataInitial()); // Use const constructor
 
   /// Load data for specific business ID
   Future<void> loadData(String businessId);
@@ -44,7 +62,7 @@ mixin BusinessDataLoaderMixin<T> on BusinessDataBloc<T> {
     required String errorMessage,
   }) async {
     try {
-      emit(BusinessDataLoading());
+      emit(const BusinessDataLoading()); // Use const constructor
       final data = await loader();
       emit(BusinessDataLoaded(data));
     } catch (e) {

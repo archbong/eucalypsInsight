@@ -35,6 +35,8 @@ class MockSalesRepository implements SalesRepository {
             subtotal: 25.00,
           ),
         ],
+        paymentStatus: 'Paid',
+        notes: 'Delivered to office',
       ),
       Sale(
         id: 'sale1002',
@@ -51,6 +53,8 @@ class MockSalesRepository implements SalesRepository {
             subtotal: 300.00,
           ),
         ],
+        paymentStatus: 'Pending',
+        notes: 'Delivered to office',
       ),
     ],
     'biz2': [
@@ -69,6 +73,8 @@ class MockSalesRepository implements SalesRepository {
             subtotal: 31.98,
           ),
         ],
+        paymentStatus: 'failed',
+        notes: 'Payment failed',
       ),
     ],
     'biz3': [
@@ -87,6 +93,8 @@ class MockSalesRepository implements SalesRepository {
             subtotal: 5000.00,
           ),
         ],
+        paymentStatus: 'Paid',
+        notes: 'Recieved payment in cash',
       ),
     ],
   };
@@ -95,11 +103,10 @@ class MockSalesRepository implements SalesRepository {
   Future<List<Sale>> fetchSales(String businessId) async {
     print('[SalesRepository] Fetching sales for business: $businessId');
     await Future.delayed(const Duration(seconds: 1)); // Simulate network delay
-    if (DateTime.now().second % 5 == 0) {
-      // 20% chance of error
-      throw Exception('Failed to fetch sales: Network error');
-    }
-    // Return a deep copy to prevent external modifications to the mock data
+    // REMOVED/COMMENTED OUT THE ERROR SIMULATION LINE BELOW
+    // if (DateTime.now().second % 5 == 0) {
+    //   throw Exception('Failed to fetch sales: Network error');
+    // }
     final sales =
         _salesByBusiness[businessId]
             ?.map(
@@ -110,6 +117,8 @@ class MockSalesRepository implements SalesRepository {
                 customerName: sale.customerName,
                 totalAmount: sale.totalAmount,
                 items: List<SaleItem>.from(sale.items),
+                paymentStatus: sale.paymentStatus,
+                notes: sale.notes,
               ),
             )
             .toList() ??
@@ -122,37 +131,47 @@ class MockSalesRepository implements SalesRepository {
 
   @override
   Future<void> addSale(Sale sale) async {
+    print('[SalesRepository] Adding sale: ${sale.id}'); // Added for clarity
     await Future.delayed(const Duration(seconds: 1));
-    if (DateTime.now().second % 5 == 0) {
-      // 20% chance of error
-      throw Exception('Failed to add sale: Server unavailable');
-    }
+    // REMOVED/COMMENTED OUT THE ERROR SIMULATION LINE BELOW
+    // if (DateTime.now().second % 5 == 0) {
+    //   throw Exception('Failed to add sale: Server unavailable');
+    // }
     _salesByBusiness.putIfAbsent(sale.businessId, () => []).add(sale);
+    print('[SalesRepository] Sale added: ${sale.id}'); // Added for clarity
   }
 
   @override
   Future<void> updateSale(Sale sale) async {
+    print('[SalesRepository] Updating sale: ${sale.id}'); // Added for clarity
     await Future.delayed(const Duration(seconds: 1));
-    if (DateTime.now().second % 5 == 0) {
-      // 20% chance of error
-      throw Exception('Failed to update sale: Version conflict');
-    }
+    // REMOVED/COMMENTED OUT THE ERROR SIMULATION LINE BELOW
+    // if (DateTime.now().second % 5 == 0) {
+    //   throw Exception('Failed to update sale: Version conflict');
+    // }
     final sales = _salesByBusiness[sale.businessId];
     if (sales != null) {
       final index = sales.indexWhere((s) => s.id == sale.id);
       if (index != -1) sales[index] = sale;
+      print('[SalesRepository] Sale updated: ${sale.id}'); // Added for clarity
+    } else {
+      print(
+        '[SalesRepository] Sale not found for update: ${sale.id}',
+      ); // Added for clarity
     }
   }
 
   @override
   Future<void> deleteSale(String saleId) async {
+    print('[SalesRepository] Deleting sale: $saleId'); // Added for clarity
     await Future.delayed(const Duration(seconds: 1));
-    if (DateTime.now().second % 5 == 0) {
-      // 20% chance of error
-      throw Exception('Failed to delete sale: Permission denied');
-    }
+    // REMOVED/COMMENTED OUT THE ERROR SIMULATION LINE BELOW
+    // if (DateTime.now().second % 5 == 0) {
+    //   throw Exception('Failed to delete sale: Permission denied');
+    // }
     _salesByBusiness.forEach(
       (_, sales) => sales.removeWhere((s) => s.id == saleId),
     );
+    print('[SalesRepository] Sale deleted: $saleId'); // Added for clarity
   }
 }

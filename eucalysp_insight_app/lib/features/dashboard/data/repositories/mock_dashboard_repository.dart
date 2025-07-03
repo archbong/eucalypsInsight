@@ -1,21 +1,60 @@
 // lib/features/dashboard/data/repositories/mock_dashboard_repository.dart
-// Remove the local Transaction class, as it's now a separate entity file.
-// import 'package:eucalysp_insight_app/features/dashboard/data/models/dashboard_data.dart'; // Use domain entities instead of data/models
-import 'package:eucalysp_insight_app/features/dashboard/data/repositories/dashboard_repository.dart';
-import 'package:eucalysp_insight_app/features/dashboard/domain/entities/dashboard_data.dart'; // NEW import
-import 'package:eucalysp_insight_app/features/dashboard/domain/entities/transaction.dart'; // NEW import
 
-// Remove the local Transaction class here, it's now in entities/transaction.dart
+// 1. Ensure NO import from data/models/dashboard_data.dart exists here.
+//    The line below should NOT be present or should be commented out:
+// // import 'package:eucalysp_insight_app/features/dashboard/data/models/dashboard_data.dart'; // This line is problematic if still active
+
+import 'package:eucalysp_insight_app/features/dashboard/data/repositories/dashboard_repository.dart';
+import 'package:eucalysp_insight_app/features/dashboard/domain/entities/transaction.dart'
+    hide Transaction; // Canonical Transaction
+import 'package:eucalysp_insight_app/features/dashboard/domain/models/dashboard_data.dart';
+import 'package:fl_chart/fl_chart.dart'; // For FlSpot
+
+// Remove any local Transaction class here, it's now in entities/transaction.dart
+// (Confirm there isn't a 'class Transaction { ... }' definition directly in this file)
 
 class MockDashboardRepository implements DashboardRepository {
   @override
-  // Implement the correct signature: fetchDashboardSummary with businessId
   Future<DashboardData> fetchDashboardSummary(String businessId) async {
-    // Simulate a network delay
     await Future.delayed(const Duration(seconds: 2));
 
-    // Return mock data that depends on the businessId
-    // You can customize this logic further for each business
+    const List<FlSpot> commonMainChartData = [
+      FlSpot(0, 2),
+      FlSpot(1, 1.8),
+      FlSpot(2, 2.5),
+      FlSpot(3, 2.2),
+      FlSpot(4, 3.0),
+      FlSpot(5, 2.7),
+      FlSpot(6, 3.5),
+    ];
+    const List<double> commonSalesChartData = [
+      10.0,
+      12.0,
+      11.5,
+      13.0,
+      12.5,
+      14.0,
+      13.5,
+    ];
+    const List<double> commonCustomerChartData = [
+      5.0,
+      5.2,
+      5.5,
+      5.3,
+      5.8,
+      6.0,
+      5.7,
+    ];
+    const List<double> commonInventoryChartData = [
+      20.0,
+      19.5,
+      21.0,
+      20.5,
+      22.0,
+      21.5,
+      23.0,
+    ];
+
     switch (businessId) {
       case 'biz1':
         return DashboardData(
@@ -30,18 +69,24 @@ class MockDashboardRepository implements DashboardRepository {
           ],
           recentTransactions: [
             Transaction(
+              // This is the Transaction being called
               id: 'tr1-A',
               amount: 1200.0,
               date: DateTime.now().subtract(const Duration(hours: 1)),
               description: 'SaaS Subscription',
             ),
             Transaction(
+              // This is the Transaction being called
               id: 'tr2-A',
               amount: 50.0,
               date: DateTime.now().subtract(const Duration(hours: 3)),
               description: 'Consultation Fee',
             ),
           ],
+          mainChartData: commonMainChartData,
+          salesChartData: commonSalesChartData,
+          customerChartData: commonCustomerChartData,
+          inventoryChartData: commonInventoryChartData,
         );
       case 'biz2':
         return DashboardData(
@@ -68,6 +113,18 @@ class MockDashboardRepository implements DashboardRepository {
               description: 'Wholesale Order',
             ),
           ],
+          mainChartData: const [
+            FlSpot(0, 1.5),
+            FlSpot(1, 1.2),
+            FlSpot(2, 1.8),
+            FlSpot(3, 1.4),
+            FlSpot(4, 2.0),
+            FlSpot(5, 1.7),
+            FlSpot(6, 2.3),
+          ],
+          salesChartData: const [8.0, 9.0, 8.5, 9.5, 9.0, 10.0, 9.8],
+          customerChartData: commonCustomerChartData,
+          inventoryChartData: commonInventoryChartData,
         );
       case 'biz3':
         return DashboardData(
@@ -94,9 +151,20 @@ class MockDashboardRepository implements DashboardRepository {
               description: 'Customs Duty',
             ),
           ],
+          mainChartData: const [
+            FlSpot(0, 0.5),
+            FlSpot(1, 0.7),
+            FlSpot(2, 0.6),
+            FlSpot(3, 0.9),
+            FlSpot(4, 0.8),
+            FlSpot(5, 1.1),
+            FlSpot(6, 1.0),
+          ],
+          salesChartData: const [5.0, 6.0, 5.5, 6.5, 6.0, 7.0, 6.8],
+          customerChartData: commonCustomerChartData,
+          inventoryChartData: commonInventoryChartData,
         );
       default:
-        // Fallback for unknown businessId
         return DashboardData(
           welcomeMessage: "Welcome, Generic Business!",
           totalSales: 0,
@@ -104,6 +172,10 @@ class MockDashboardRepository implements DashboardRepository {
           totalInventory: 0,
           recentActivities: const ["No activities for this business."],
           recentTransactions: const [],
+          mainChartData: const [],
+          salesChartData: const [],
+          customerChartData: const [],
+          inventoryChartData: const [],
         );
     }
   }

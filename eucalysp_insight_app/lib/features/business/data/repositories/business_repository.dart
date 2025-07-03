@@ -1,34 +1,41 @@
-// lib/features/business/data/repositories/business_repository.dart
 import 'package:eucalysp_insight_app/features/business/domain/entities/business.dart';
+import 'package:hive/hive.dart';
 
 abstract class BusinessRepository {
   Future<List<Business>> fetchUserBusinesses(String userId);
-  // In a real app, you might also have selectBusinessOnBackend() if selection is persisted server-side.
+  Future<void> createBusiness(String userId, Business business);
+  Future<void> updateBusiness(String userId, Business business);
+  Future<void> deleteBusiness(String userId, String businessId);
 }
 
-class MockBusinessRepository implements BusinessRepository {
+class HiveBusinessRepository implements BusinessRepository {
+  static const String _boxName = 'businesses';
+
+  Future<Box<Business>> _openBox() async {
+    return await Hive.openBox<Business>(_boxName);
+  }
+
   @override
   Future<List<Business>> fetchUserBusinesses(String userId) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 1));
+    final box = await _openBox();
+    return box.values.toList();
+  }
 
-    // Return dummy businesses based on userId (though userId isn't used here for simplicity)
-    return const [
-      Business(
-        id: 'biz1',
-        name: 'Alpha Solutions Inc.',
-        description: 'Software Development',
-      ),
-      Business(
-        id: 'biz2',
-        name: 'Beta Retail Stores',
-        description: 'Retail Chain',
-      ),
-      Business(
-        id: 'biz3',
-        name: 'Gamma Logistics Ltd.',
-        description: 'Shipping & Delivery',
-      ),
-    ];
+  @override
+  Future<void> createBusiness(String userId, Business business) async {
+    final box = await _openBox();
+    await box.put(business.id, business);
+  }
+
+  @override
+  Future<void> updateBusiness(String userId, Business business) async {
+    final box = await _openBox();
+    await box.put(business.id, business);
+  }
+
+  @override
+  Future<void> deleteBusiness(String userId, String businessId) async {
+    final box = await _openBox();
+    await box.delete(businessId);
   }
 }

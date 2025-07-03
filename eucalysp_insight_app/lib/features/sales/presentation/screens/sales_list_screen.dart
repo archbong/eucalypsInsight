@@ -1,7 +1,6 @@
-// lib/features/sales/presentation/screens/sales_list_screen.dart
-import 'package:eucalysp_insight_app/features/business/bloc/business_cubit.dart'; // Keep for FAB logic
+import 'package:eucalysp_insight_app/features/business/bloc/business_cubit.dart';
 import 'package:eucalysp_insight_app/features/sales/domain/entities/sale.dart';
-import 'package:eucalysp_insight_app/features/business/bloc/business_state.dart'; // For BusinessLoaded state
+import 'package:eucalysp_insight_app/features/business/bloc/business_state.dart';
 import 'package:eucalysp_insight_app/features/sales/presentation/screens/add_sale_screen.dart';
 import 'package:eucalysp_insight_app/features/sales/presentation/screens/edit_sale_screen.dart';
 import 'package:flutter/material.dart';
@@ -9,13 +8,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:eucalysp_insight_app/features/sales/bloc/sales_cubit.dart';
 import 'package:eucalysp_insight_app/app/core/widgets/business_data_view.dart';
 import 'package:intl/intl.dart';
+// Add these imports for state classes
+import 'package:eucalysp_insight_app/app/core/bloc/business_data_bloc.dart'; // For BusinessDataState
+// For BusinessLoaded
 
 class SalesListScreen extends StatelessWidget {
   const SalesListScreen({super.key});
 
-  // Moved this method OUTSIDE of the build method, directly into the class
   Widget _buildSalesList(List<Sale> sales, BuildContext context) {
-    // Pass context to access Theme
+    sales = List.from(sales); // Force new list instance
     if (sales.isEmpty) {
       return Center(
         child: Column(
@@ -25,14 +26,12 @@ class SalesListScreen extends StatelessWidget {
             const SizedBox(height: 16),
             const Text('No sales recorded for this business'),
             const SizedBox(height: 16),
-            // Optional: Add a button to add first sale if the list is empty
             FilledButton.icon(
               onPressed: () {
                 final businessState = context.read<BusinessCubit>().state;
                 if (businessState is BusinessLoaded &&
                     businessState.selectedBusiness != null) {
                   Navigator.push(
-                    // Corrected navigation to AddSaleScreen
                     context,
                     MaterialPageRoute(
                       builder: (context) => AddSaleScreen(
@@ -84,13 +83,9 @@ class SalesListScreen extends StatelessWidget {
           },
           onDismissed: (_) {
             context.read<SalesCubit>().deleteSale(sale.id);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Sale deleted successfully')),
-            );
           },
           child: Card(
             margin: const EdgeInsets.only(bottom: 10),
-            // WRAP THE ExpansionTile WITH InkWell TO MAKE IT TAPABLE
             child: InkWell(
               onTap: () {
                 Navigator.push(
@@ -101,7 +96,6 @@ class SalesListScreen extends StatelessWidget {
                 );
               },
               child: ExpansionTile(
-                // The onTap has been REMOVED from here
                 leading: CircleAvatar(
                   backgroundColor: Theme.of(
                     context,
@@ -152,23 +146,36 @@ class SalesListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Sales')),
-      body: BusinessDataView<List<Sale>>(
-        successBuilder: (sales) => _buildSalesList(sales, context),
-        onRefresh: () {
-          final businessState = context.read<BusinessCubit>().state;
-          if (businessState is BusinessLoaded &&
-              businessState.selectedBusiness != null) {
-            context.read<SalesCubit>().refreshData(
-              businessState.selectedBusiness!.id,
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Cannot refresh: no business selected'),
-              ),
-            );
+      body: BlocListener<SalesCubit, BusinessDataState<List<Sale>>>(
+        listener: (context, state) {
+          if (state is BusinessDataLoaded<List<Sale>>) {
+            final businessState = context.read<BusinessCubit>().state;
+            if (businessState is BusinessLoaded &&
+                businessState.selectedBusiness != null) {
+              context.read<SalesCubit>().refreshData(
+                businessState.selectedBusiness!.id,
+              );
+            }
           }
         },
+        child: BusinessDataView<List<Sale>>(
+          successBuilder: (sales) => _buildSalesList(List.from(sales), context),
+          onRefresh: () {
+            final businessState = context.read<BusinessCubit>().state;
+            if (businessState is BusinessLoaded &&
+                businessState.selectedBusiness != null) {
+              context.read<SalesCubit>().refreshData(
+                businessState.selectedBusiness!.id,
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Cannot refresh: no business selected'),
+                ),
+              );
+            }
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -182,11 +189,7 @@ class SalesListScreen extends StatelessWidget {
                   businessId: businessState.selectedBusiness!.id,
                 ),
               ),
-            ).then((_) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Sale added successfully')),
-              );
-            });
+            );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Select a business first')),

@@ -55,24 +55,37 @@ class _AddInventoryScreenState extends State<AddInventoryScreen> {
       );
 
       try {
-        // We'll listen for success/error states in the Cubit or a separate listener.
-        // For simplicity, just call addProduct. The InventoryCubit will then fetchProducts
-        // and update the list screen automatically.
-        await context.read<InventoryCubit>().addProduct(newProduct);
+        // Submit the new product to the database via the cubit
+        await context.read<InventoryCubit>().addProduct(newProduct).then((_) {
+          // Clear form fields after successful submission
+          _nameController.clear();
+          _skuController.clear();
+          _quantityController.clear();
+          _priceController.clear();
+          _descriptionController.clear();
+          setState(() => _selectedCategory = null);
+        });
 
         // Instead of a generic success message, we indicate success by popping
         // with a result. The calling screen (InventoryListScreen) can then decide
         // what to do with this result.
         // Navigator.pop(context, true); // Indicate success
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Product added successfully!')),
+          SnackBar(
+            content: Text('${newProduct.name} added successfully!'),
+            duration: const Duration(seconds: 2),
+          ),
         );
-        Navigator.pop(context, true); // Pop with true to indicate success
+        if (mounted) Navigator.pop(context, true);
       } catch (e) {
         // If addProduct itself throws an error (before Cubit emits an error state)
         // or if you want immediate feedback on this screen:
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to add product: ${e.toString()}')),
+          SnackBar(
+            content: Text('Failed to add product: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
         );
       }
     }

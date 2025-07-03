@@ -1,32 +1,47 @@
 // lib/features/dashboard/bloc/dashboard_cubit.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:eucalysp_insight_app/features/dashboard/bloc/dashboard_state.dart';
 import 'package:eucalysp_insight_app/features/dashboard/data/repositories/dashboard_repository.dart';
 import 'package:eucalysp_insight_app/features/business/bloc/business_cubit.dart';
 import 'package:eucalysp_insight_app/features/business/bloc/business_state.dart';
+import 'package:eucalysp_insight_app/features/inventory/bloc/inventory_cubit.dart';
+import 'package:eucalysp_insight_app/features/sales/bloc/sales_cubit.dart';
 import 'dart:async';
 
 class DashboardCubit extends Cubit<DashboardState> {
   final DashboardRepository _dashboardRepository;
   final BusinessCubit _businessCubit;
+  final InventoryCubit _inventoryCubit;
+  final SalesCubit _salesCubit;
   late StreamSubscription _businessSubscription;
+  late StreamSubscription _inventorySubscription;
+  late StreamSubscription _salesSubscription;
   String? _currentBusinessId;
 
   DashboardCubit({
     required DashboardRepository dashboardRepository,
     required BusinessCubit businessCubit,
+    required InventoryCubit inventoryCubit,
+    required SalesCubit salesCubit,
   }) : _dashboardRepository = dashboardRepository,
        _businessCubit = businessCubit,
+       _inventoryCubit = inventoryCubit,
+       _salesCubit = salesCubit,
        super(DashboardInitial()) {
-    print('DashboardCubit created. Initial state: ${state.runtimeType}');
+    debugPrint('[DashboardCubit] Created. Initial state: ${state.runtimeType}');
     _businessSubscription = _businessCubit.stream.listen((businessState) {
-      print('BusinessCubit state changed to: ${businessState.runtimeType}');
+      debugPrint(
+        '[DashboardCubit] Business state changed: ${businessState.runtimeType}',
+      );
       if (businessState is BusinessLoaded &&
           businessState.selectedBusiness != null) {
         final newBusinessId = businessState.selectedBusiness!.id;
         if (newBusinessId != _currentBusinessId) {
           _currentBusinessId = newBusinessId;
-          print('Business selected: $_currentBusinessId. Fetching products...');
+          debugPrint(
+            '[DashboardCubit] Business selected: $_currentBusinessId. Fetching dashboard data...',
+          );
           fetchDashboardData(newBusinessId);
         }
       } else if (businessState is BusinessLoaded &&
@@ -41,20 +56,39 @@ class DashboardCubit extends Cubit<DashboardState> {
           (_businessCubit.state as BusinessLoaded).selectedBusiness!.id;
       fetchDashboardData(_currentBusinessId!);
     }
+
+    _inventorySubscription = _inventoryCubit.stream.listen((inventoryState) {
+      if (_currentBusinessId != null) {
+        fetchDashboardData(_currentBusinessId!);
+      }
+    });
+
+    _salesSubscription = _salesCubit.stream.listen((salesState) {
+      if (_currentBusinessId != null) {
+        fetchDashboardData(_currentBusinessId!);
+      }
+    });
   }
 
   Future<void> fetchDashboardData(String businessId) async {
     try {
       emit(DashboardLoading());
-      print('Emitting DasboardLoading for $businessId'); // Debug print
-      // Call the repository method, which now returns DashboardData
+      debugPrint('[DashboardCubit] Loading data for business: $businessId');
       final dashboardData = await _dashboardRepository.fetchDashboardSummary(
         businessId,
       );
-      // Emit the loaded state with the DashboardData object
+      debugPrint('''
+      [DashboardCubit] Data loaded:
+      - Total Sales: \$${dashboardData.totalSales}
+      - Total Inventory: ${dashboardData.totalInventory}
+      - Recent Transactions: ${dashboardData.recentTransactions.length}
+      ''');
       emit(DashboardLoaded(dashboardData: dashboardData));
     } catch (e) {
-      print('Error in fetchDashboardData for $businessId: $e'); // Debug print
+      debugPrint(
+        '[DashboardCubit] Error fetching data for $businessId: $e\n$e',
+      );
+
       emit(
         DashboardError(
           message: 'Failed to load dashboard data: ${e.toString()}',
@@ -66,6 +100,8 @@ class DashboardCubit extends Cubit<DashboardState> {
   @override
   Future<void> close() {
     _businessSubscription.cancel();
+    _inventorySubscription.cancel();
+    _salesSubscription.cancel();
     return super.close();
   }
 }

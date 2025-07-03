@@ -1,0 +1,688 @@
+import 'package:flutter/material.dart';
+
+// Define your brand colors based on the provided CSS
+class AppColors {
+  // Primary Brand Colors
+  static const Color primary = Color(0xFF9333EA);
+  static const Color primaryLight = Color(0xFFA855F7);
+  static const Color primaryDark = Color(0xFF7C3AED);
+  static const Color primaryLighter = Color(0xFFC084FC);
+  static const Color primaryDarker = Color(0xFF6D28D9);
+
+  // Accent Colors (Mapped to Material's secondary/tertiary roles or used directly)
+  static const Color accent1 = Color(0xFF000000); // Black
+  static const Color accent2 = Color(0xFFFFFFFF); // White
+  static const Color accent3 = Color(0xFF374151); // Dark Gray
+  static const Color accent4 = Color(0xFFF3F4F6); // Light Gray
+
+  // Text Colors
+  static const Color textDark = Color(0xFF1F2937);
+  static const Color textLight = Color(0xFF6B7280);
+  static const Color textMuted = Color(0xFF9CA3AF);
+  static const Color textInverse = Color(0xFFFFFFFF);
+  static const Color textPrimary = Color(0xFF9333EA); // Same as primary
+
+  // Background Colors
+  static const Color backgroundLight = Color(0xFFFFFFFF); // White
+  static const Color backgroundDark = Color(0xFF1A1A1A); // Very Dark Gray
+  static const Color backgroundMuted = Color(0xFFF9FAFB); // Very Light Gray
+  static const Color backgroundCard = Color(0xFFFFFFFF); // White
+  static const Color backgroundOverlay = Color(
+    0xCC1A1A1A,
+  ); // rgba(26, 26, 26, 0.8)
+
+  // Status Colors
+  static const Color success = Color(0xFF10B981); // Green
+  static const Color successLight = Color(0xFFD1FAE5);
+  static const Color error = Color(0xFFEF4444); // Red
+  static const Color errorLight = Color(0xFEE2E2);
+  static const Color warning = Color(0xFFF59E0B); // Orange
+  static const Color warningLight = Color(0xFFFEF3C7);
+  static const Color info = Color(0xFF3B82F6); // Blue
+  static const Color infoLight = Color(0xFFDBEAFE);
+
+  // Border Colors
+  static const Color border = Color(0xFFE5E7EB);
+  static const Color borderLight = Color(0xFFF3F4F6);
+  static const Color borderDark = Color(0xFF374151);
+  static const Color borderPrimary = Color(0xFF9333EA);
+  static const Color borderFocus = Color(0xFFA855F7);
+
+  // Card Colors
+  static const Color cardBackground = Color(0xFFFFFFFF);
+  static const Color cardBorder = Color(0xFFE5E7EB);
+  static const Color cardShadow = Color(0x1A000000); // rgba(0, 0, 0, 0.1)
+  static const Color cardHoverShadow = Color(
+    0x269333EA,
+  ); // rgba(147, 51, 234, 0.15)
+
+  // NEW: Card specific dark mode colors from CSS overrides
+  static const Color cardBackgroundDark = Color(
+    0xFF1F2937,
+  ); // From dark mode override
+  static const Color cardBorderDark = Color(
+    0xFF374151,
+  ); // From dark mode override
+
+  // NEW: Button hover/active states (moved from extension)
+  static const Color buttonPrimaryHover = Color(
+    0xFF7C3AED,
+  ); // --color-button-primary-hover
+  static const Color buttonPrimaryActive = Color(
+    0xFF6D28D9,
+  ); // --color-button-primary-active
+  static const Color buttonSecondaryHover = Color(
+    0xFFF9FAFB,
+  ); // --color-button-secondary-hover
+  static const Color buttonSecondaryActive = Color(
+    0xFFF3F4F6,
+  ); // --color-button-secondary-active
+}
+
+// Global sizing values (moved from onboarding_screen.dart)
+class AppRadius {
+  static const double sm = 4.0;
+  static const double md = 6.0;
+  static const double lg = 8.0;
+  static const double xl = 12.0;
+  static const double _2xl = 16.0;
+  static const double full = 9999.0; // Corresponds to CSS radius-full
+}
+
+// Custom ColorScheme for your light theme
+ColorScheme _lightColorScheme = ColorScheme(
+  // Core colors
+  primary: AppColors.primary,
+  onPrimary: AppColors.textInverse, // Text/icons on primary (white)
+  primaryContainer: AppColors.primaryLighter, // Lighter primary for containers
+  onPrimaryContainer:
+      AppColors.textDark, // Text on primary container (dark text)
+
+  secondary:
+      AppColors.accent3, // Using accent3 as a secondary tonal color for M3
+  onSecondary: AppColors.textInverse, // Text/icons on secondary (white)
+  secondaryContainer: AppColors.accent4, // Lighter accent3 for containers
+  onSecondaryContainer:
+      AppColors.textDark, // Text on secondary container (dark text)
+
+  tertiary: AppColors.accent1, // Black can act as a strong tertiary accent
+  onTertiary: AppColors.textInverse, // Text/icons on tertiary (white)
+  tertiaryContainer: AppColors.accent3, // Dark grey for tertiary container
+  onTertiaryContainer:
+      AppColors.textInverse, // Text on tertiary container (white)
+
+  error: AppColors.error,
+  onError: AppColors.textInverse,
+  errorContainer: AppColors.errorLight,
+  onErrorContainer: AppColors.textDark,
+
+  // Backgrounds and Surfaces
+  background: AppColors
+      .backgroundMuted, // Use muted background for general app background
+  onBackground: AppColors.textDark, // Dark text on background
+  surface: AppColors.backgroundLight, // Use light background for cards/sheets
+  onSurface: AppColors.textDark, // Dark text on surface
+  surfaceVariant:
+      AppColors.accent4, // A slightly different surface color (light gray)
+  onSurfaceVariant: AppColors.textLight, // Lighter text on surface variant
+  // Other essential Material 3 colors
+  outline: AppColors.border, // For borders around inputs, cards etc.
+  shadow: AppColors.cardShadow, // Default shadow color
+  inverseSurface:
+      AppColors.backgroundDark, // Dark background for inverted surfaces
+  onInverseSurface: AppColors.textInverse, // Light text on inverted surface
+  inversePrimary:
+      AppColors.primaryLight, // Lighter primary for inverted primary
+  scrim: AppColors.backgroundOverlay, // For modal scrims
+
+  brightness: Brightness.light,
+);
+
+// ThemeData for your light theme
+ThemeData buildAppTheme() {
+  return ThemeData(
+    useMaterial3: true, // Enable Material 3
+    colorScheme: _lightColorScheme,
+
+    // Define typography
+    textTheme:
+        TextTheme(
+          // Headline styles (large, prominent text)
+          displayLarge: TextStyle(
+            fontSize: 57.0,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textDark,
+          ),
+          displayMedium: TextStyle(
+            fontSize: 45.0,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textDark,
+          ),
+          displaySmall: TextStyle(
+            fontSize: 36.0,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textDark,
+          ),
+          headlineLarge: TextStyle(
+            fontSize: 32.0,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textDark,
+          ),
+          headlineMedium: TextStyle(
+            fontSize: 28.0,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textDark,
+          ),
+          headlineSmall: TextStyle(
+            fontSize: 24.0,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textDark,
+          ),
+
+          // Title styles (medium-sized headings)
+          titleLarge: TextStyle(
+            fontSize: 22.0,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDark,
+          ),
+          titleMedium: TextStyle(
+            fontSize: 16.0,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDark,
+          ),
+          titleSmall: TextStyle(
+            fontSize: 14.0,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDark,
+          ),
+
+          // Body styles (main text content)
+          bodyLarge: TextStyle(fontSize: 16.0, color: AppColors.textDark),
+          bodyMedium: TextStyle(fontSize: 14.0, color: AppColors.textLight),
+          bodySmall: TextStyle(fontSize: 12.0, color: AppColors.textMuted),
+
+          // Label styles (for buttons, form fields, etc.)
+          labelLarge: TextStyle(
+            fontSize: 14.0,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textInverse,
+          ), // Default for buttons
+          labelMedium: TextStyle(
+            fontSize: 12.0,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textLight,
+          ),
+          labelSmall: TextStyle(
+            fontSize: 11.0,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textMuted,
+          ),
+        ).apply(
+          // Apply these base colors to all text styles where not explicitly overridden
+          bodyColor: AppColors.textDark,
+          displayColor: AppColors.textDark,
+        ),
+
+    // Common widget themes based on your CSS
+    scaffoldBackgroundColor:
+        AppColors.backgroundMuted, // Overall app background
+    appBarTheme: AppBarTheme(
+      backgroundColor: _lightColorScheme
+          .surface, // Use surface for AppBar to create a "floating" effect
+      foregroundColor: _lightColorScheme.onSurface, // Text/icons on AppBar
+      elevation: 2, // A subtle shadow for the app bar
+      shadowColor: _lightColorScheme.shadow.withOpacity(0.1),
+      titleTextStyle: TextStyle(
+        color: _lightColorScheme.onSurface,
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+      ),
+      iconTheme: IconThemeData(color: _lightColorScheme.onSurface),
+    ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: _lightColorScheme.primary,
+      foregroundColor: _lightColorScheme.onPrimary,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ), // More rounded
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style:
+          ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.textInverse,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(
+                AppRadius.xl,
+              ), // radius-xl (12px)
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 14,
+            ), // MD sizing
+            // Corrected textStyle usage: create a TextStyle with the desired color
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors
+                  .textInverse, // Explicitly set text color for the button
+            ),
+            elevation: 2, // subtle shadow
+            shadowColor: AppColors.primary.withOpacity(0.25),
+          ).copyWith(
+            overlayColor: WidgetStateProperty.resolveWith<Color?>((
+              Set<WidgetState> states,
+            ) {
+              if (states.contains(WidgetState.hovered)) {
+                return AppColors.buttonPrimaryHover.withOpacity(0.1);
+              }
+              if (states.contains(WidgetState.pressed)) {
+                return AppColors.buttonPrimaryActive.withOpacity(0.2);
+              }
+              return null;
+            }),
+          ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor:
+            AppColors.textPrimary, // Primary color for text buttons
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(color: AppColors.borderPrimary),
+        foregroundColor: AppColors.textPrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xl), // radius-xl
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: 14,
+        ), // MD sizing
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor:
+          _lightColorScheme.surface, // Text fields have a light background
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg), // radius-lg (8px)
+        borderSide: BorderSide(color: AppColors.border),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderSide: BorderSide(color: AppColors.borderLight),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderSide: BorderSide(color: AppColors.borderFocus, width: 2.0),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderSide: BorderSide(color: AppColors.error, width: 2.0),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderSide: BorderSide(color: AppColors.error, width: 2.5),
+      ),
+      labelStyle: TextStyle(color: AppColors.textLight),
+      hintStyle: TextStyle(color: AppColors.textMuted),
+      floatingLabelStyle: TextStyle(color: _lightColorScheme.primary),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    ),
+    cardTheme: CardThemeData(
+      color: AppColors.cardBackground,
+      surfaceTintColor: Colors.transparent, // Prevents M3 tinting cards
+      elevation: 2,
+      shadowColor: AppColors.cardShadow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(
+          AppRadius._2xl,
+        ), // Adjusted for a slightly larger radius for cards (2xl)
+        side: BorderSide(color: AppColors.cardBorder),
+      ),
+      margin:
+          EdgeInsets.zero, // Default no margin, use Padding widget around it
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: _lightColorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius._2xl),
+      ),
+      titleTextStyle: TextStyle(
+        color: _lightColorScheme.onSurface,
+        fontWeight: FontWeight.bold,
+        fontSize: 20,
+      ),
+      contentTextStyle: TextStyle(
+        color: _lightColorScheme.onSurfaceVariant,
+        fontSize: 16,
+      ),
+    ),
+
+    dividerTheme: DividerThemeData(
+      color: AppColors.border,
+      thickness: 1,
+      space: 16,
+    ),
+  );
+}
+
+// -----------------------------------------------------------------------------
+// 2. `lib/app/app_theme.dart` (Dark Theme)
+// -----------------------------------------------------------------------------
+
+ColorScheme _darkColorScheme = ColorScheme(
+  primary: AppColors
+      .cardBackgroundDark, // Slightly lighter primary for dark mode visibility
+  onPrimary: AppColors.textInverse,
+  primaryContainer: AppColors.primaryDark,
+  onPrimaryContainer: AppColors.textInverse,
+
+  secondary: AppColors.accent4, // Lighter grey as secondary in dark mode
+  onSecondary: AppColors.accent1, // Black text on secondary
+  secondaryContainer: AppColors.accent3,
+  onSecondaryContainer: AppColors.textInverse,
+
+  tertiary: AppColors.accent2, // White as a tertiary accent in dark mode
+  onTertiary: AppColors.accent1,
+  tertiaryContainer: AppColors.accent4,
+  onTertiaryContainer: AppColors.accent1,
+
+  error: AppColors.error,
+  onError: AppColors.textInverse,
+  errorContainer: AppColors.errorLight,
+  onErrorContainer: AppColors.textDark,
+
+  background: AppColors.backgroundDark, // Main dark background
+  onBackground: AppColors.textLight, // Lighter text on dark background
+  surface: AppColors.backgroundDark, // Dark surface for cards/sheets
+  onSurface: AppColors.textLight, // Lighter text on dark surface
+  surfaceVariant:
+      AppColors.backgroundMuted, // A slightly different, darker surface variant
+  onSurfaceVariant: AppColors.textMuted,
+
+  outline: AppColors.borderDark, // Darker border in dark mode
+  shadow: AppColors.cardShadow,
+  inverseSurface: AppColors.backgroundLight,
+  onInverseSurface: AppColors.textDark,
+  inversePrimary: AppColors.primaryDark,
+  scrim: AppColors.backgroundOverlay,
+
+  brightness: Brightness.dark,
+);
+
+ThemeData buildDarkAppTheme() {
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: _darkColorScheme,
+    scaffoldBackgroundColor: AppColors.backgroundDark,
+    textTheme:
+        TextTheme(
+          displayLarge: TextStyle(
+            fontSize: 57.0,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textInverse,
+          ),
+          displayMedium: TextStyle(
+            fontSize: 45.0,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textInverse,
+          ),
+          displaySmall: TextStyle(
+            fontSize: 36.0,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textInverse,
+          ),
+          headlineLarge: TextStyle(
+            fontSize: 32.0,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textInverse,
+          ),
+          headlineMedium: TextStyle(
+            fontSize: 28.0,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textInverse,
+          ),
+          headlineSmall: TextStyle(
+            fontSize: 24.0,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textInverse,
+          ),
+
+          titleLarge: TextStyle(
+            fontSize: 22.0,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textMuted,
+          ),
+          titleMedium: TextStyle(
+            fontSize: 16.0,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textMuted,
+          ),
+          titleSmall: TextStyle(
+            fontSize: 14.0,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textMuted,
+          ),
+
+          bodyLarge: TextStyle(fontSize: 16.0, color: AppColors.textMuted),
+          bodyMedium: TextStyle(fontSize: 14.0, color: AppColors.textMuted),
+          bodySmall: TextStyle(fontSize: 12.0, color: AppColors.textMuted),
+
+          labelLarge: TextStyle(
+            fontSize: 14.0,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textInverse,
+          ),
+          labelMedium: TextStyle(
+            fontSize: 12.0,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textMuted,
+          ),
+          labelSmall: TextStyle(
+            fontSize: 11.0,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textMuted,
+          ),
+        ).apply(
+          bodyColor: AppColors.textMuted,
+          displayColor: AppColors.textInverse,
+        ),
+    appBarTheme: AppBarTheme(
+      backgroundColor: _darkColorScheme.surface,
+      foregroundColor: _darkColorScheme.onSurface,
+      elevation: 2,
+      shadowColor: _darkColorScheme.shadow.withOpacity(0.2),
+      titleTextStyle: TextStyle(
+        color: _darkColorScheme.onSurface,
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+      ),
+      iconTheme: IconThemeData(color: _darkColorScheme.onSurface),
+    ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: _darkColorScheme.primary,
+      foregroundColor: _darkColorScheme.onPrimary,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style:
+          ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary, // Primary color is consistent
+            foregroundColor: AppColors.textInverse,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            // Corrected textStyle usage
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textInverse, // Explicitly set text color
+            ),
+            elevation: 2,
+            shadowColor: AppColors.primary.withOpacity(0.35),
+          ).copyWith(
+            overlayColor: WidgetStateProperty.resolveWith<Color?>((
+              Set<WidgetState> states,
+            ) {
+              if (states.contains(WidgetState.hovered)) {
+                return AppColors.buttonPrimaryHover.withOpacity(0.1);
+              }
+              if (states.contains(WidgetState.pressed)) {
+                return AppColors.buttonPrimaryActive.withOpacity(0.2);
+              }
+              return null;
+            }),
+          ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: AppColors
+            .primaryLight, // Lighter primary for text buttons in dark mode
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(
+          color: AppColors.borderPrimary,
+        ), // Primary border color
+        foregroundColor: AppColors.primaryLight,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor:
+          _darkColorScheme.surfaceVariant, // Darker fill for dark mode inputs
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderSide: BorderSide(color: AppColors.borderDark),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderSide: BorderSide(color: AppColors.borderDark),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderSide: BorderSide(color: AppColors.borderFocus, width: 2.0),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderSide: BorderSide(color: AppColors.error, width: 2.0),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderSide: BorderSide(color: AppColors.error, width: 2.5),
+      ),
+      labelStyle: TextStyle(color: AppColors.textMuted),
+      hintStyle: TextStyle(color: AppColors.textMuted.withOpacity(0.7)),
+      floatingLabelStyle: TextStyle(color: _darkColorScheme.primary),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    ),
+    cardTheme: CardThemeData(
+      color:
+          AppColors.cardBackgroundDark, // Use the specific dark card background
+      surfaceTintColor: Colors.transparent,
+      elevation: 4, // Slightly higher elevation for dark cards
+      shadowColor: AppColors.cardShadow.withOpacity(
+        0.5,
+      ), // More prominent shadow
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius._2xl),
+        side: BorderSide(
+          color: AppColors.cardBorderDark,
+        ), // Darker border for cards
+      ),
+      margin: EdgeInsets.zero,
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: _lightColorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius._2xl),
+      ),
+      titleTextStyle: TextStyle(
+        color: _lightColorScheme.onSurface,
+        fontWeight: FontWeight.bold,
+        fontSize: 20,
+      ),
+      contentTextStyle: TextStyle(
+        color: _lightColorScheme.onSurfaceVariant,
+        fontSize: 16,
+      ),
+    ),
+
+    dividerTheme: DividerThemeData(
+      color: AppColors.borderDark,
+      thickness: 1,
+      space: 16,
+    ),
+  );
+}
+
+// --- Gradients (Not part of ThemeData directly, but useful constants) ---
+// You will use these directly in widgets that support gradients (e.g., Container with BoxDecoration)
+LinearGradient get primaryGradient => const LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [AppColors.primary, AppColors.primaryDark], // #9333EA to #7C3AED
+);
+
+LinearGradient get primaryToBlackGradient => const LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [AppColors.primary, AppColors.accent1], // #9333EA to #000000
+);
+
+LinearGradient get primaryToWhiteGradient => const LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [AppColors.primary, AppColors.accent2], // #9333EA to #FFFFFF
+);
+
+LinearGradient get triBlendGradient => const LinearGradient(
+  begin: Alignment.centerLeft,
+  end: Alignment.centerRight,
+  stops: [0.0, 0.5, 1.0],
+  colors: [
+    AppColors.primary,
+    AppColors.accent2,
+    AppColors.accent1,
+  ], // #9333EA, #FFFFFF, #000000
+);
+
+RadialGradient get radialPrimaryGradient => const RadialGradient(
+  center: Alignment.center,
+  radius: 0.5,
+  colors: [AppColors.primary, AppColors.accent1], // #9333EA to #000000
+);
+
+// Gradient for card premium in light mode
+LinearGradient get cardGradientLight => LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [
+    AppColors.primary.withOpacity(0.1), // rgba(147, 51, 234, 0.1)
+    AppColors.accent1.withOpacity(0.05), // rgba(0, 0, 0, 0.05)
+  ],
+);
+
+// Gradient for card premium in dark mode
+LinearGradient get cardGradientDark => LinearGradient(
+  // Corrected from LinearColor
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [
+    AppColors.primary.withOpacity(0.15), // rgba(147, 51, 234, 0.15)
+    AppColors.accent2.withOpacity(0.05), // rgba(255, 255, 255, 0.05)
+  ],
+);

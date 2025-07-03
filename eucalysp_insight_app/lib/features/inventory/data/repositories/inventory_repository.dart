@@ -1,12 +1,18 @@
 // business-app/eucalypsInsight/eucalysp_insight_app/lib/features/inventory/data/repositories/inventory_repository.dart
 import 'package:eucalysp_insight_app/features/inventory/domain/entities/product.dart';
-import 'package:hive/hive.dart'; // Import Hive for HiveInventoryRepository
 
 abstract class InventoryRepository {
-  Future<List<Product>> fetchProducts(String businessId);
+  Future<List<Product>> fetchProducts(
+    String businessId, {
+    int page = 1,
+    int limit = 20,
+  });
   Future<void> addProduct(Product product);
   Future<void> updateProduct(Product product);
   Future<void> deleteProduct(String productId);
+
+  Future<List<Product>> getOfflineProducts(String businessId);
+  Future<void> saveProductsToCache(List<Product> products);
 
   // ADD THIS NEW METHOD SIGNATURE
   Future<void> updateProductPartial(
@@ -85,14 +91,27 @@ class MockInventoryRepository implements InventoryRepository {
   };
 
   @override
-  Future<List<Product>> fetchProducts(String businessId) async {
+  Future<List<Product>> fetchProducts(
+    String businessId, {
+    int page = 1,
+    int limit = 20,
+  }) async {
     await Future.delayed(const Duration(seconds: 1)); // Simulate network delay
     // Simulating network error only if we're not running tests (for better dev experience)
     if (const String.fromEnvironment('FLUTTER_TEST') != 'true' &&
         DateTime.now().second % 5 == 0) {
       throw Exception('Failed to fetch inventory: Network error simulation');
     }
-    return _productsByBusiness[businessId] ?? [];
+
+    final allProducts = _productsByBusiness[businessId] ?? [];
+    final startIndex = (page - 1) * limit;
+    if (startIndex >= allProducts.length) return [];
+
+    final endIndex = startIndex + limit;
+    return allProducts.sublist(
+      startIndex,
+      endIndex.clamp(0, allProducts.length),
+    );
   }
 
   @override
@@ -147,62 +166,17 @@ class MockInventoryRepository implements InventoryRepository {
       );
     }
   }
-}
 
-class HiveInventoryRepository implements InventoryRepository {
-  static const String _boxName = 'inventory';
-  late final Box<Product> _box;
-
-  // You might want to call init from your service locator
-  Future<void> init() async {
-    // Ensure Hive is initialized globally before opening boxes
-    if (!Hive.isBoxOpen(_boxName)) {
-      _box = await Hive.openBox<Product>(_boxName);
-    } else {
-      _box = Hive.box<Product>(_boxName);
-    }
+  @override
+  Future<List<Product>> getOfflineProducts(String businessId) async {
+    // For Mock, you might return an empty list or a subset of mock data.
+    // Given it's a mock, it typically focuses on API call simulation.
+    return [];
   }
 
   @override
-  Future<List<Product>> fetchProducts(String businessId) async {
-    // In a real Hive implementation, you might filter by businessId if products from multiple businesses are in the same box.
-    // Or, you might have separate boxes per business. For now, assuming products can be filtered by businessId.
-    return _box.values.where((p) => p.businessId == businessId).toList();
-  }
-
-  @override
-  Future<void> addProduct(Product product) async {
-    await _box.put(product.id, product);
-  }
-
-  @override
-  Future<void> updateProduct(Product product) async {
-    await _box.put(product.id, product);
-  }
-
-  @override
-  Future<void> deleteProduct(String productId) async {
-    await _box.delete(productId);
-  }
-
-  // IMPLEMENT THE NEW METHOD FOR HIVE INVENTORY REPOSITORY
-  @override
-  Future<void> updateProductPartial(
-    String productId, {
-    double? price,
-    int? quantity,
-  }) async {
-    final existingProduct = _box.get(productId);
-    if (existingProduct != null) {
-      final updatedProduct = existingProduct.copyWith(
-        price: price ?? existingProduct.price,
-        quantity: quantity ?? existingProduct.quantity,
-      );
-      await _box.put(productId, updatedProduct);
-    } else {
-      throw Exception(
-        'Product with ID $productId not found in Hive for partial update.',
-      );
-    }
+  Future<void> saveProductsToCache(List<Product> products) async {
+    // For Mock, this might be a no-op or simulate saving to a temporary in-memory cache.
+    // No-op for this example.
   }
 }

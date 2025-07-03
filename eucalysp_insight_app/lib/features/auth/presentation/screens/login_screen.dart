@@ -69,10 +69,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         context.read<AuthCubit>().logout();
                       },
-                      child: const Text('Logout'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                       ),
+                      child: const Text('Logout'),
                     ),
                 ],
               ),

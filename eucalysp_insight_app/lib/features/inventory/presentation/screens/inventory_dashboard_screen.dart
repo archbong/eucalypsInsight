@@ -240,8 +240,8 @@ class InventoryDashboardScreen extends StatelessWidget {
       final count = safeProducts
           .where(
             (p) =>
-                (p.price! >= (range['min'] ?? 0.0)) &&
-                (p.price! <= (range['max'] ?? double.infinity)),
+                (p.price >= (range['min'] ?? 0.0)) &&
+                (p.price <= (range['max'] ?? double.infinity)),
           ) // Added null check for range values
           .length;
       return MapEntry<String, dynamic>(range['label']! as String, count);
@@ -268,8 +268,8 @@ class InventoryDashboardScreen extends StatelessWidget {
       final count = safeProducts
           .where(
             (p) =>
-                (p.quantity! >= (range['min'] ?? 0)) &&
-                (p.quantity! <=
+                (p.quantity >= (range['min'] ?? 0)) &&
+                (p.quantity <=
                     (range['max'] ??
                         double.infinity
                             .toInt())), // Added null check for range values

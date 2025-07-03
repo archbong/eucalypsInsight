@@ -1,15 +1,16 @@
-// lib/app/app_router.dart
-
 import 'package:eucalysp_insight_app/app/core/bloc/business_data_bloc.dart';
 import 'package:eucalysp_insight_app/app/core/bloc/navigation_cubit/navigation_cubit.dart';
 import 'package:eucalysp_insight_app/features/business/bloc/business_cubit.dart';
 import 'package:eucalysp_insight_app/features/business/bloc/business_state.dart';
 import 'package:eucalysp_insight_app/features/business/presentation/screens/business_selection_screen.dart';
 import 'package:eucalysp_insight_app/features/inventory/bloc/inventory_cubit.dart';
-import 'package:eucalysp_insight_app/features/inventory/presentation/screens/inventory_list_screen.dart';
+import 'package:eucalysp_insight_app/features/inventory/presentation/screens/inventory_management_screen.dart';
+import 'package:eucalysp_insight_app/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:eucalysp_insight_app/features/sales/bloc/sales_cubit.dart';
 import 'package:eucalysp_insight_app/features/sales/domain/entities/sale.dart';
-import 'package:eucalysp_insight_app/features/sales/presentation/screens/sales_list_screen.dart';
+import 'package:eucalysp_insight_app/features/sales/presentation/screens/sales_management_screen.dart';
+import 'package:eucalysp_insight_app/features/sales/presentation/screens/sales_analytics_screen.dart';
+import 'package:eucalysp_insight_app/features/splash/presentation/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:eucalysp_insight_app/app/main_app_shell.dart';
@@ -22,32 +23,28 @@ import 'package:eucalysp_insight_app/features/auth/bloc/auth_cubit.dart';
 import 'package:eucalysp_insight_app/features/auth/bloc/auth_state.dart';
 import 'dart:async';
 import 'package:async/async.dart';
+import 'package:hive/hive.dart';
 
-// Placeholder screens for Inventory and Sales for now
-class InventoryScreen extends StatelessWidget {
-  const InventoryScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Inventory Screen Content'));
-  }
-}
+// Key for storing onboarding status in Hive
+const String _onboardingBoxName = 'appSettings';
+const String _onboardingKey = 'hasSeenOnboarding';
 
-class SalesScreen extends StatelessWidget {
-  const SalesScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Sales Screen Content'));
-  }
-}
-
-// MAKE appRouter A FUNCTION THAT TAKES CUBITS
 GoRouter buildAppRouter({
   required AuthCubit authCubit,
   required BusinessCubit businessCubit,
 }) {
   return GoRouter(
-    initialLocation: '/dashboard',
+    initialLocation: '/',
     routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) =>
+            const SplashScreen(), // This is your SplashScreen
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/select-business',
@@ -67,8 +64,9 @@ GoRouter buildAppRouter({
               child: BlocProvider(
                 create: (context) => DashboardCubit(
                   dashboardRepository: sl(),
-                  // Now safe to read BusinessCubit as it's provided higher up
                   businessCubit: context.read<BusinessCubit>(),
+                  inventoryCubit: context.read<InventoryCubit>(),
+                  salesCubit: context.read<SalesCubit>(),
                 ),
                 child: const DashboardScreen(),
               ),
@@ -80,10 +78,9 @@ GoRouter buildAppRouter({
               child: BlocProvider(
                 create: (context) => InventoryCubit(
                   inventoryRepository: sl(),
-                  // Now safe to read BusinessCubit as it's provided higher up
                   businessCubit: context.read<BusinessCubit>(),
                 ),
-                child: const InventoryListScreen(),
+                child: const InventoryManagementScreen(),
               ),
             ),
           ),
@@ -93,53 +90,95 @@ GoRouter buildAppRouter({
               child: BlocProvider<BusinessDataBloc<List<Sale>>>(
                 create: (context) => SalesCubit(
                   salesRepository: sl(),
-                  // Now safe to read BusinessCubit as it's provided higher up
                   businessCubit: context.read<BusinessCubit>(),
                 ),
-                child: const SalesListScreen(),
+                child: const SalesManagementScreen(),
               ),
             ),
+          ),
+          GoRoute(
+            path: '/sales/analytics',
+            pageBuilder: (context, state) =>
+                NoTransitionPage(child: const SalesAnalyticsScreen()),
           ),
         ],
       ),
     ],
     debugLogDiagnostics: true,
-    // USE THE PASSED CUBITS HERE
-    redirect: (BuildContext context, GoRouterState state) {
-      final authState = authCubit.state; // Use the passed cubit
-      final businessState = businessCubit.state; // Use the passed cubit
+    redirect: (BuildContext context, GoRouterState state) async {
+      final authState = authCubit.state;
+      final businessState = businessCubit.state;
 
       final bool isAuthenticated = authState is Authenticated;
       final bool hasSelectedBusiness =
           businessState is BusinessLoaded &&
           businessState.selectedBusiness != null;
+
+      final bool hasBusiness = businessCubit.state is BusinessLoaded;
+
+      final bool onOnboarding = state.fullPath == '/onboarding';
       final bool isLoggingIn = state.uri.path == '/login';
+      final bool onSplash = state.fullPath == '/';
       final bool isSelectingBusiness = state.uri.path == '/select-business';
+
+      // Check onboarding status from Hive
+      final settingsBox = await Hive.openBox(_onboardingBoxName);
+      final bool hasSeenOnboarding = settingsBox.get(_onboardingKey) ?? false;
+
+      // Handle Splash screen initial load
+      if (onSplash) {
+        return null; // Let the splash screen handle its own navigation after its delay
+      }
+
+      // If user hasn't seen onboarding and is not already on it
+      if (!hasSeenOnboarding && !onOnboarding) {
+        return '/onboarding';
+      }
+
+      // Skip authentication checks if on onboarding
+      if (onOnboarding) {
+        return null;
+      }
+
+      // If onboarding is completed and user is not logged in, redirect to login
+      if (hasSeenOnboarding && !isAuthenticated && !isLoggingIn) {
+        return '/login';
+      }
+
+      // If logged in but no business selected/created
+      if (isAuthenticated &&
+          !hasBusiness &&
+          !state.fullPath!.startsWith('/business')) {
+        return '/select-business';
+      }
+
+      // If logged in and has business, but trying to access login/onboarding
+      if (isAuthenticated && hasBusiness && (isLoggingIn || onOnboarding)) {
+        return '/dashboard';
+      }
 
       if (!isAuthenticated && !isLoggingIn) {
         return '/login';
       }
+
       if (isAuthenticated && !hasSelectedBusiness && !isSelectingBusiness) {
         return '/select-business';
       }
+
       if (isAuthenticated &&
           hasSelectedBusiness &&
           (isLoggingIn || isSelectingBusiness)) {
         return '/dashboard';
       }
+
       return null;
     },
-    // Pass the streams from the provided cubits
     refreshListenable: GoRouterRefreshStream(
-      StreamGroup.merge([
-        authCubit.stream,
-        businessCubit.stream,
-      ]), // Use the passed cubits
+      StreamGroup.merge([authCubit.stream, businessCubit.stream]),
     ),
   );
 }
 
-// Helper to merge streams for refreshListenable
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();

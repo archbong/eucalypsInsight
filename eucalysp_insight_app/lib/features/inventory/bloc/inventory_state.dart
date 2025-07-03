@@ -14,11 +14,13 @@ class InventoryLoading extends InventoryState {}
 class InventoryLoaded extends InventoryState {
   final List<Product> allProducts;
   final List<Product> filteredProducts;
-  final String? message; // Optional message for UI (e.g., offline data warning)
+  final bool hasMore; // Optional message for UI (e.g., offline data warning)
+  final String? message;
 
   InventoryLoaded({
     required this.allProducts,
     required this.filteredProducts,
+    this.hasMore = false,
     this.message,
   });
 
@@ -33,18 +35,11 @@ class InventoryLoaded extends InventoryState {
 
   @override
   int get hashCode => Object.hash(
-    listEquals(allProducts, []),
-    listEquals(filteredProducts, []),
+    Object.hashAll(allProducts),
+    Object.hashAll(filteredProducts),
     message,
   );
 }
-
-// Removed InventoryFiltered as its functionality is now merged into InventoryLoaded
-// class InventoryFiltered extends InventoryState {
-//   final List<Product> filteredProducts;
-//
-//   InventoryFiltered({required this.filteredProducts});
-// }
 
 class InventoryError extends InventoryState {
   final String message;
